@@ -1,6 +1,5 @@
 # ============================================================
 # BSP2 / Project Omega -- Step 3: Temperature Experiment
-# 
 # RUN ORDER:
 # 1. multiple patients v3.py    (Generates LLM responses & evaluator scores)
 # 2. bleu_rouge_metrics.py      (Calculates text similarity metrics)
