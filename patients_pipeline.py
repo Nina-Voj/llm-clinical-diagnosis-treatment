@@ -24,7 +24,7 @@ init(autoreset=True)
 # Here we define the main settings for our pipeline: which LLM models to test,
 # how many patients to process, and API rate limit safeguards.
 # =====================================================================
-MIMIC_DB          = r"C:\Users\Can\Desktop\üni\bsp2\mimic.db" # Local indexed database
+MIMIC_DB          = r"C:\Your mimic.db adress" # Local indexed database(EDIT THIS)
 MAX_PATIENTS      = 4000  # Set to a number to limit, or None to process all patients
 RANDOM_SEED       = 42    # Fixed seed for reproducible random patient sampling (set a seed)
 BATCH_SIZE        = 50    # Number of patients to load into memory at once (keeps RAM usage low)
