@@ -2,11 +2,11 @@
 # BSP2 / Project Omega -- Step 4: Dashboard & Visualizations
 # 
 # RUN ORDER:
-# 1. multiple patients v3.py    (Generates LLM responses & evaluator scores)
+# 1. patients_pipeline.py     (Generates LLM responses & evaluator scores)
 # 2. bleu_rouge_metrics.py      (Calculates text similarity metrics)
-# 3. temperature.py             (Runs the hyperparameter experiment)
-# 4. graphs.py                  <-- THIS FILE (Builds the main visualization dashboard)
-# 5. lime_analysis.py           (Runs LIME explainability analysis)
+# 3. temperature_test.py        (Runs the hyperparameter experiment)
+# 4. graph_maker.py             <-- THIS FILE (Builds the main visualization dashboard)
+# 5. lime_analyzer.py           (Runs LIME explainability analysis)
 # ============================================================
 import pandas as pd
 import plotly.graph_objects as go
@@ -53,8 +53,8 @@ print()
 tm_df = pd.DataFrame(tm_rows)
 
 # ---------- COLORS & LABELS ----------
-colors      = {"Llama-70B": "#4C72B0", "Llama-8B": "#DD8452"}
-temp_colors = {"0.0": "#E1B12C", "0.7": "#C0392B", "1.0": "#8D6E63"}
+colors      = {"Llama-70B": "#4C72B0", "Gemma-31B": "#DD8452"}
+temp_colors = {"0.1": "#E1B12C", "0.5": "#C0392B", "1.0": "#8D6E63"}
 
 # ---------- 3 row × 3 column LAYOUT ----------
 fig = make_subplots(
@@ -73,17 +73,17 @@ fig = make_subplots(
 
 # ---------- ROW 1: old 2 PANEL ----------
 fig.add_trace(go.Box(y=df["model1_len"], name="Llama-70B",    marker_color=colors["Llama-70B"],    showlegend=True, boxpoints=False),  row=1, col=1)
-fig.add_trace(go.Box(y=df["model2_len"], name="Llama-8B",     marker_color=colors["Llama-8B"],     showlegend=True, boxpoints=False),  row=1, col=1)
+fig.add_trace(go.Box(y=df["model2_len"], name="Gemma-31B",    marker_color=colors["Gemma-31B"],    showlegend=True, boxpoints=False),  row=1, col=1)
 
 fig.add_trace(go.Box(y=df["model1_overlap"], name="Llama-70B",    marker_color=colors["Llama-70B"],    showlegend=False, boxpoints=False), row=1, col=2)
-fig.add_trace(go.Box(y=df["model2_overlap"], name="Llama-8B",     marker_color=colors["Llama-8B"],     showlegend=False, boxpoints=False), row=1, col=2)
+fig.add_trace(go.Box(y=df["model2_overlap"], name="Gemma-31B",    marker_color=colors["Gemma-31B"],    showlegend=False, boxpoints=False), row=1, col=2)
 
 fig.add_trace(go.Box(y=df["model1_rx_ratio"], name="Llama-70B",    marker_color=colors["Llama-70B"],    showlegend=False, boxpoints=False), row=1, col=3)
-fig.add_trace(go.Box(y=df["model2_rx_ratio"], name="Llama-8B",     marker_color=colors["Llama-8B"],     showlegend=False, boxpoints=False), row=1, col=3)
+fig.add_trace(go.Box(y=df["model2_rx_ratio"], name="Gemma-31B",    marker_color=colors["Gemma-31B"],    showlegend=False, boxpoints=False), row=1, col=3)
 
 # ---------- ROW 2: BLEU / ROUGE / TEMPERATURE ----------
-models      = ["llama-3.3-70b", "llama-3.1-8b"]
-model_names = ["Llama-70B",     "Llama-8B"]
+models      = ["llama-3.3-70b", "gemma-4-31b"]
+model_names = ["Llama-70B",     "Gemma-31B"]
 
 for label, mcol in zip(model_names, models):
     fig.add_trace(
@@ -99,7 +99,7 @@ for label, mcol in zip(model_names, models):
                text=[f"{br[f'{mcol}_rouge1'].mean():.4f}"], textposition="outside"),
         row=2, col=2)
 
-for t in [0.0, 0.7, 1.0]:
+for t in [0.1, 0.5, 1.0]:
     sub = tm_df[tm_df["temperature"] == t]
     fig.add_trace(
         go.Box(y=sub["output_length"], name=f"temp={t}",
@@ -118,15 +118,15 @@ for col in ["model1_accuracy", "model2_accuracy", "model1_safety", "model2_safet
 
 # Total Score (divide by 100 to get percentage)
 fig.add_trace(go.Box(y=ev["model1_total"] / 100.0, name="Llama-70B",    marker_color=colors["Llama-70B"],    showlegend=False, boxpoints=False), row=3, col=1)
-fig.add_trace(go.Box(y=ev["model2_total"] / 100.0, name="Llama-8B",     marker_color=colors["Llama-8B"],     showlegend=False, boxpoints=False), row=3, col=1)
+fig.add_trace(go.Box(y=ev["model2_total"] / 100.0, name="Gemma-31B",    marker_color=colors["Gemma-31B"],    showlegend=False, boxpoints=False), row=3, col=1)
 
 # Accuracy (divide by 25 to get percentage)
 fig.add_trace(go.Box(y=ev["model1_accuracy"] / 25.0, name="Llama-70B",    marker_color=colors["Llama-70B"],    showlegend=False, boxpoints=False), row=3, col=2)
-fig.add_trace(go.Box(y=ev["model2_accuracy"] / 25.0, name="Llama-8B",     marker_color=colors["Llama-8B"],     showlegend=False, boxpoints=False), row=3, col=2)
+fig.add_trace(go.Box(y=ev["model2_accuracy"] / 25.0, name="Gemma-31B",    marker_color=colors["Gemma-31B"],    showlegend=False, boxpoints=False), row=3, col=2)
 
 # Safety (divide by 25 to get percentage)
 fig.add_trace(go.Box(y=ev["model1_safety"] / 25.0, name="Llama-70B",    marker_color=colors["Llama-70B"],    showlegend=False, boxpoints=False), row=3, col=3)
-fig.add_trace(go.Box(y=ev["model2_safety"] / 25.0, name="Llama-8B",     marker_color=colors["Llama-8B"],     showlegend=False, boxpoints=False), row=3, col=3)
+fig.add_trace(go.Box(y=ev["model2_safety"] / 25.0, name="Gemma-31B",    marker_color=colors["Gemma-31B"],    showlegend=False, boxpoints=False), row=3, col=3)
 
 # ---------- LAYOUT & AXES RANGES ----------
 # Calculate dynamic maximums with padding so nothing is cut off
@@ -147,7 +147,7 @@ max_eval_safety = max(ev["model1_safety"].max(), ev["model2_safety"].max())
 
 fig.update_layout(
     title=dict(
-        text="Project Omega – Full Evaluation Dashboard (2 Models)",
+        text="Project Omega – Full Evaluation Dashboard (Llama-70B vs Gemma-31B)",
         x=0.5, xanchor="center", font=dict(size=22),
     ),
     width=1200,
