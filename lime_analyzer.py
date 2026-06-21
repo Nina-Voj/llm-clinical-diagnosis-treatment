@@ -2,11 +2,11 @@
 # BSP2 / Project Omega -- Step 5: LIME Explainability Analysis
 # 
 # RUN ORDER:
-# 1. multiple patients v3.py    (Generates LLM responses & evaluator scores)
+# 1. patients_pipeline.py     (Generates LLM responses & evaluator scores)
 # 2. bleu_rouge_metrics.py      (Calculates text similarity metrics)
-# 3. temperature.py             (Runs the hyperparameter experiment)
-# 4. graphs.py                  (Builds the main visualization dashboard)
-# 5. lime_analysis.py           <-- THIS FILE (Runs LIME explainability analysis)
+# 3. temperature_test.py        (Runs the hyperparameter experiment)
+# 4. graph_maker.py             (Builds the main visualization dashboard)
+# 5. lime_analyzer.py           <-- THIS FILE (Runs LIME explainability analysis)
 #
 # What it does:
 #   Applies LIME (Local Interpretable Model-agnostic Explanations)
@@ -53,8 +53,8 @@ N_FEATURES  = 10    # top words per LIME explanation
 N_SAMPLES   = 800   # LIME perturbation samples (more = stable, slower)
 
 MODEL_COLS = {
-    "llama-3.3-70b-versatile":  "model1_output",
-    "llama-3.1-8b-instant":   "model2_output",
+    "llama-3.3-70b-versatile": "model1_output",  # Llama 3.3 70B (Groq -> OpenRouter -> SambaNova -> Fireworks -> NVIDIA)
+    "gemma-4-31b-it":          "model2_output",  # Gemma 4 31B (Google Gemini API)
 }
 
 # Prompt section headers (used for section-level aggregation)
