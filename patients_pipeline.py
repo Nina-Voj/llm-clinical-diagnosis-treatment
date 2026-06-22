@@ -2,11 +2,11 @@
 # BSP2 / Project Omega -- Step 1: Main Pipeline
 # 
 # RUN ORDER:
-# 1. multiple patients v3.py    <-- THIS FILE (Generates LLM responses & evaluator scores)
+# 1. patients_pipeline.py    <-- THIS FILE (Generates LLM responses & evaluator scores)
 # 2. bleu_rouge_metrics.py      (Calculates text similarity metrics)
-# 3. temperature.py             (Runs the hyperparameter experiment)
-# 4. graphs.py                  (Builds the main visualization dashboard)
-# 5. lime_analysis.py           (Runs LIME explainability analysis)
+# 3. temperature_test.py             (Runs the hyperparameter experiment)
+# 4. graph_maker.py                  (Builds the main visualization dashboard)
+# 5. lime_analyzer.py           (Runs LIME explainability analysis)
 # ============================================================
 import os
 import duckdb
