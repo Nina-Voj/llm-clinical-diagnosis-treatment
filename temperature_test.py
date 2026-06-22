@@ -1,11 +1,12 @@
 # ============================================================
 # BSP2 / Project Omega -- Step 3: Temperature Experiment
+#
 # RUN ORDER:
-# 1. multiple patients v3.py    (Generates LLM responses & evaluator scores)
+# 1. patients_pipeline.py    (Generates LLM responses & evaluator scores)
 # 2. bleu_rouge_metrics.py      (Calculates text similarity metrics)
-# 3. temperature.py             <-- THIS FILE (Runs the hyperparameter experiment)
-# 4. graphs.py                  (Builds the main visualization dashboard)
-# 5. lime_analysis.py           (Runs LIME explainability analysis)
+# 3. temperature_test.py             <-- THIS FILE (Runs the hyperparameter experiment)
+# 4. graph_maker.py                  (Builds the main visualization dashboard)
+# 5. lime_analyzer.py           (Runs LIME explainability analysis)
 # ============================================================
 
 import os
