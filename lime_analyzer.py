@@ -2,7 +2,7 @@
 # BSP2 / Project Omega -- Step 5: LIME Explainability Analysis
 # 
 # RUN ORDER:
-# 1. patients_pipeline.py     (Generates LLM responses & evaluator scores)
+# 1. patients_pipeline.py       (Generates LLM responses & evaluator scores)
 # 2. bleu_rouge_metrics.py      (Calculates text similarity metrics)
 # 3. temperature_test.py        (Runs the hyperparameter experiment)
 # 4. graph_maker.py             (Builds the main visualization dashboard)
@@ -48,12 +48,12 @@ INPUT_CSV   = "mimic_batch_results.csv"
 OUTPUT_CSV  = "lime_results.csv"
 CHART_FILE  = "lime_explainability_chart.png"
 
-N_PATIENTS  = None  # Set to a number (e.g. 5) to limit, or None to process all patients
+N_PATIENTS  = None  # Set to a number (eg. 5) to limit, or None to process all patients
 N_FEATURES  = 10    # top words per LIME explanation
 N_SAMPLES   = 800   # LIME perturbation samples (more = stable, slower)
 
 MODEL_COLS = {
-    "llama-3.3-70b-versatile": "model1_output",  # Llama 3.3 70B (Groq -> OpenRouter -> SambaNova -> Fireworks -> NVIDIA)
+    "llama-3.3-70b-versatile": "model1_output",  # Llama 3.3 70B (Groq)
     "gemma-4-31b-it":          "model2_output",  # Gemma 4 31B (Google Gemini API)
 }
 
@@ -302,7 +302,7 @@ def plot_dashboard(all_results: list[dict], output_path: str):
     ax_heat = fig.add_subplot(outer_gs[1])
     ax_heat.set_facecolor(BG_PANEL2)
 
-    # Aggregate: mean |weight| per model × section
+    # Aggregate: mean |weight| per model x section
     sections = list(PROMPT_SECTIONS.keys()) + ["Other"]
     heat_data = np.zeros((n_mod, len(sections)))
 
