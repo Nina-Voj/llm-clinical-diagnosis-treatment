@@ -2,7 +2,7 @@
 # BSP2 / Project Omega -- Step 4: Dashboard & Visualizations
 # 
 # RUN ORDER:
-# 1. patients_pipeline.py     (Generates LLM responses & evaluator scores)
+# 1. patients_pipeline.py       (Generates LLM responses & evaluator scores)
 # 2. bleu_rouge_metrics.py      (Calculates text similarity metrics)
 # 3. temperature_test.py        (Runs the hyperparameter experiment)
 # 4. graph_maker.py             <-- THIS FILE (Builds the main visualization dashboard)
@@ -33,10 +33,10 @@ df["total_true_drugs"] = df["true_rx_count"].clip(lower=1)
 df["model1_rx_ratio"]  = df["model1_overlap"] / df["total_true_drugs"]
 df["model2_rx_ratio"]  = df["model2_overlap"] / df["total_true_drugs"]
 
-# ---------- TEMPERATURE → ROUGE-1 & BLEU ----------
+# ---------- TEMPERATURE --> ROUGE-1 & BLEU ----------
 # Compute per-row BLEU & ROUGE-1 for every temperature experiment entry.
 # Reference: the actual patient diagnoses from bleu_rouge_results.csv.
-# Note: lexical-overlap proxy — not a live model evaluation.
+# Note: lexical-overlap proxy, not a live model evaluation.
 r_scorer = rouge_scorer.RougeScorer(["rouge1"], use_stemmer=True)
 smooth   = SmoothingFunction().method1
 br_ref   = br[["hadm_id", "all_diagnoses_ref"]].drop_duplicates()
@@ -85,12 +85,12 @@ for col in ["model1_accuracy", "model2_accuracy", "model1_safety", "model2_safet
     if col in ev.columns and not ev[col].empty:
         assert ev[col].max() <= MAX_SUBSCORE, f"Error: {col} exceeds {MAX_SUBSCORE}. Check evaluator scoring scale!"
 
-# ---------- 5 row × 3 column LAYOUT ----------
-# Row 1: Output stats          — Length, Drug Overlap count, Drug Overlap %
-# Row 2: Text similarity       — BLEU, ROUGE-1, ROUGE-2
-# Row 3: Text similarity cont. — ROUGE-L, Evaluator Total, Winner bar chart
-# Row 4: Evaluator subscores   — Accuracy, Safety, Completeness
-# Row 5: Evaluator + Temp      — Usefulness, Temp→BLEU, Temp→ROUGE-1
+# ---------- 5 row x 3 column LAYOUT ----------
+# Row 1: Output stats           Length, Drug Overlap count, Drug Overlap %
+# Row 2: Text similarity        BLEU, ROUGE-1, ROUGE-2
+# Row 3: Text similarity cont.  ROUGE-L, Evaluator Total, Winner bar chart
+# Row 4: Evaluator subscores    Accuracy, Safety, Completeness
+# Row 5: Evaluator + Temp       Usefulness, Temp-->BLEU, Temp-->ROUGE-1
 fig = make_subplots(
     rows=5, cols=3,
     subplot_titles=[
@@ -149,7 +149,7 @@ fig.add_trace(go.Bar(
     showlegend=False,
 ), row=3, col=3)
 
-# ── ROW 4: Evaluator Accuracy / Safety / Completeness ────────────────
+# -- ROW 4: Evaluator Accuracy / Safety / Completeness ----------------
 fig.add_trace(go.Box(y=ev["model1_accuracy"]     / MAX_SUBSCORE, name="Llama-70B", marker_color=colors["Llama-70B"], showlegend=False, boxpoints=False), row=4, col=1)
 fig.add_trace(go.Box(y=ev["model2_accuracy"]     / MAX_SUBSCORE, name="Gemma-31B", marker_color=colors["Gemma-31B"], showlegend=False, boxpoints=False), row=4, col=1)
 fig.add_trace(go.Box(y=ev["model1_safety"]       / MAX_SUBSCORE, name="Llama-70B", marker_color=colors["Llama-70B"], showlegend=False, boxpoints=False), row=4, col=2)
@@ -157,11 +157,11 @@ fig.add_trace(go.Box(y=ev["model2_safety"]       / MAX_SUBSCORE, name="Gemma-31B
 fig.add_trace(go.Box(y=ev["model1_completeness"] / MAX_SUBSCORE, name="Llama-70B", marker_color=colors["Llama-70B"], showlegend=False, boxpoints=False), row=4, col=3)
 fig.add_trace(go.Box(y=ev["model2_completeness"] / MAX_SUBSCORE, name="Gemma-31B", marker_color=colors["Gemma-31B"], showlegend=False, boxpoints=False), row=4, col=3)
 
-# ── ROW 5: Usefulness / Temperature BLEU / Temperature ROUGE-1 ───────
+# -- ROW 5: Usefulness / Temperature BLEU / Temperature ROUGE-1 ------------
 fig.add_trace(go.Box(y=ev["model1_usefulness"] / MAX_SUBSCORE, name="Llama-70B", marker_color=colors["Llama-70B"], showlegend=False, boxpoints=False), row=5, col=1)
 fig.add_trace(go.Box(y=ev["model2_usefulness"] / MAX_SUBSCORE, name="Gemma-31B", marker_color=colors["Gemma-31B"], showlegend=False, boxpoints=False), row=5, col=1)
 
-# Temperature quality panels — each box = n=1000 patients at one temperature.
+# Temperature quality panels, each box = n=1000 patients at one temperature.
 # Answers: "Does higher temperature degrade lexical quality?"
 for t in [0.1, 0.5, 1.0]:
     sub = tm_df[tm_df["temperature"] == t]
@@ -199,27 +199,27 @@ fig.update_layout(
     barmode="group",
 )
 
-# Row 1 — output stats
+# Row 1: output stats
 fig.update_yaxes(range=[0, max_len * 1.15], row=1, col=1)
 fig.update_yaxes(range=[0, max_overlap + 1 if max_overlap < 5 else max_overlap * 1.15], row=1, col=2)
 fig.update_yaxes(range=[0, max(1.0, max_ratio) * 1.15], tickformat=".0%", row=1, col=3)
 
-# Row 2 — BLEU / ROUGE-1 / ROUGE-2
+# Row 2: BLEU / ROUGE-1 / ROUGE-2
 fig.update_yaxes(range=[0, max_bleu_val * 1.3], row=2, col=1)
 fig.update_yaxes(range=[0, max_rouge1   * 1.3], row=2, col=2)
 fig.update_yaxes(range=[0, max_rouge2   * 1.3], row=2, col=3)
 
-# Row 3 — ROUGE-L / Total % / Winner (winner y auto)
+# Row 3: ROUGE-L / Total % / Winner (winner y auto)
 fig.update_yaxes(range=[0, max_rougeL * 1.3], row=3, col=1)
 fig.update_yaxes(range=[0, 1.1], tickformat=".0%", row=3, col=2)
 fig.update_yaxes(range=[0, max(winner_values) * 1.25], row=3, col=3)
 
-# Row 4 — Accuracy / Safety / Completeness (all %)
+# Row 4: Accuracy / Safety / Completeness (all %)
 fig.update_yaxes(range=[0, 1.1], tickformat=".0%", row=4, col=1)
 fig.update_yaxes(range=[0, 1.1], tickformat=".0%", row=4, col=2)
 fig.update_yaxes(range=[0, 1.1], tickformat=".0%", row=4, col=3)
 
-# Row 5 — Usefulness / Temp-BLEU / Temp-ROUGE-1
+# Row 5: Usefulness / Temp-BLEU / Temp-ROUGE-1
 fig.update_yaxes(range=[0, 1.1], tickformat=".0%", row=5, col=1)
 fig.update_yaxes(range=[0, max_temp_bleu  * 1.3], row=5, col=2)
 fig.update_yaxes(range=[0, max_temp_rouge * 1.3], row=5, col=3)
