@@ -1,13 +1,13 @@
-# ============================================================
+# ===============================================================================
 # BSP2 / Project Omega -- Step 3: Temperature Experiment
-#
+# 
 # RUN ORDER:
-# 1. patients_pipeline.py    (Generates LLM responses & evaluator scores)
+# 1. patients_pipeline.py       (Generates LLM responses & evaluator scores)
 # 2. bleu_rouge_metrics.py      (Calculates text similarity metrics)
-# 3. temperature_test.py             <-- THIS FILE (Runs the hyperparameter experiment)
-# 4. graph_maker.py                  (Builds the main visualization dashboard)
+# 3. temperature_test.py        <-- THIS FILE (Runs the hyperparameter experiment)
+# 4. graph_maker.py             (Builds the main visualization dashboard)
 # 5. lime_analyzer.py           (Runs LIME explainability analysis)
-# ============================================================
+# ================================================================================
 
 import os
 import time
@@ -22,7 +22,7 @@ init(autoreset=True)
 # =====================================================================
 # 1. API SETUP
 # Model: gemma-4-31b-it via Google Gemini API
-# Multi-key rotation: add multiple keys to gemini_api_key.txt
+# add Google Gemini API key to gemini_api_key.txt
 # =====================================================================
 def load_keys(filename):
     if not os.path.exists(filename): return []
@@ -42,12 +42,12 @@ genai.configure(api_key=GEMINI_KEYS[GEMINI_KEY_IDX])
 MODEL_NAME    = "gemma-4-31b-it"   # Runs via Google Gemini API
 TEMPERATURES  = [0.1, 0.5, 1.0]   # Low / Balanced / Creative
 TEST_PATIENTS = 1000     # Number of patients to use
-SLEEP         = 3       # Seconds between API calls
+SLEEP         = 0       # Seconds between API calls
 MAX_TOKENS    = 2500    # Match main pipeline token limit
-MIN_LEN       = 200     
+MIN_LEN       = 200     # Minimum output length to consider valid (to avoid empty or truncated outputs)
 
 # =====================================================================
-# 3. API CALL WRAPPER — Google Gemini with multi-key rotation
+# 3. API CALL WRAPPER, Google Gemini key
 # =====================================================================
 def ask_temp(model, content, temperature, max_retries=10):
     global GEMINI_KEY_IDX
@@ -107,19 +107,41 @@ def main():
             done_keys.add(f"{r['hadm_id']}_{r['temperature']}")
         print(Fore.YELLOW + f"[resume] {len(done_keys)} temperature experiments already done")
 
-    print(Fore.MAGENTA + f"=== TEMPERATURE EXPERIMENT STARTING ({len(df)} Patients) ===")
-    
-    for _, row in df.iterrows():
+    total_patients  = len(df)
+    total_combos    = total_patients * len(TEMPERATURES)  # eg. 1000 * 3 = 3000
+    already_done    = len(done_keys)
+    completed_new   = 0  # new entries added this session
+
+    print(Fore.MAGENTA + f"=== TEMPERATURE EXPERIMENT STARTING ===")
+    print(Fore.MAGENTA + f"    Patients       : {total_patients}")
+    print(Fore.MAGENTA + f"    Temperatures   : {TEMPERATURES}")
+    print(Fore.MAGENTA + f"    Total combos   : {total_combos}")
+    print(Fore.MAGENTA + f"    Already done   : {already_done}")
+    print(Fore.MAGENTA + f"    Remaining      : {total_combos - already_done}")
+    print()
+
+    for pat_idx, (_, row) in enumerate(df.iterrows(), start=1):
         prompt = row["prompt"]
         if pd.isna(prompt):
             continue
-            
-        for temp in TEMPERATURES:
-            if f"{row['hadm_id']}_{temp}" in done_keys:
-                print(Fore.YELLOW + f"  Patient {row['subject_id']} (HADM: {row['hadm_id']}) | temp={temp} -> Already done, skipping")
-                continue
 
-            print(Fore.CYAN + f"  Patient {row['subject_id']} (HADM: {row['hadm_id']}) | temp={temp}")
+        for temp in TEMPERATURES:
+            key = f"{row['hadm_id']}_{temp}"
+
+            if key in done_keys:
+                continue  # silently skip already-done entries
+
+            # -- Progress counter -------------------------------------
+            done_total   = already_done + completed_new
+            pct          = done_total / total_combos * 100
+            print(
+                Fore.CYAN +
+                f"  [{done_total}/{total_combos} | {pct:.1f}%]"
+                f"  Patient {row['subject_id']} (HADM: {row['hadm_id']})"
+                f"  | temp={temp}"
+            )
+            # ----------------------------------------------------------------
+
             out = None
             for attempt in range(3):
                 out = ask_temp(MODEL_NAME, prompt, temp)
@@ -128,10 +150,10 @@ def main():
                 actual_len = len(str(out).strip()) if out else 0
                 print(Fore.RED + f"    Warning: Output too short ({actual_len} chars, min={MIN_LEN}). (Attempt {attempt+1}/3). Retrying...")
                 time.sleep(5)
-            
+
             if not out or len(str(out).strip()) < MIN_LEN:
                 raise SystemExit(f"Fatal Error: Output still too short after 3 attempts. Exiting immediately to prevent saving bad data.")
-                
+
             records.append({
                 "subject_id":    row["subject_id"],
                 "hadm_id":       row["hadm_id"],
@@ -139,13 +161,17 @@ def main():
                 "output":        out,
                 "output_length": len(out)
             })
-            
-            # Save to CSV after every call to prevent data loss in case of interruption
+            done_keys.add(key)
+            completed_new += 1
+
+            # Save after every call to prevent data loss
             pd.DataFrame(records).to_csv("temperature_results.csv", index=False, encoding="utf-8-sig")
-            
+
             time.sleep(SLEEP)
 
-    print(Fore.GREEN + f"\nDone! {len(records)} results successfully saved to 'temperature_results.csv'.")
+    final_done = already_done + completed_new
+    print(Fore.GREEN + f"\nDone! {final_done}/{total_combos} experiments saved to 'temperature_results.csv'.")
+    print(Fore.GREEN + f"    ({already_done} were already done, {completed_new} new this session.")
 
 if __name__ == "__main__":
     main()
