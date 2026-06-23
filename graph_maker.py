@@ -18,6 +18,10 @@ import nltk
 nltk.download("punkt", quiet=True)
 nltk.download("punkt_tab", quiet=True)
 
+# ---------- CONFIG & CONSTANTS ----------
+MAX_TOTAL    = 100.0   # evaluator total score ceiling
+MAX_SUBSCORE =  25.0   # ceiling for each evaluator subscore (accuracy/safety/completeness/usefulness)
+
 # ------- CSV READING ----------
 df   = pd.read_csv("mimic_batch_results.csv")
 br   = pd.read_csv("bleu_rouge_results.csv")
@@ -30,6 +34,9 @@ df["model1_rx_ratio"]  = df["model1_overlap"] / df["total_true_drugs"]
 df["model2_rx_ratio"]  = df["model2_overlap"] / df["total_true_drugs"]
 
 # ---------- TEMPERATURE → ROUGE-1 & BLEU ----------
+# Compute per-row BLEU & ROUGE-1 for every temperature experiment entry.
+# Reference: the actual patient diagnoses from bleu_rouge_results.csv.
+# Note: lexical-overlap proxy — not a live model evaluation.
 r_scorer = rouge_scorer.RougeScorer(["rouge1"], use_stemmer=True)
 smooth   = SmoothingFunction().method1
 br_ref   = br[["hadm_id", "all_diagnoses_ref"]].drop_duplicates()
@@ -52,98 +59,132 @@ for i, (_, row) in enumerate(tm.iterrows(), 1):
 print()
 tm_df = pd.DataFrame(tm_rows)
 
+# N per temperature (for subtitle labelling)
+n_per_temp = tm_df.groupby("temperature").size().to_dict()
+
+# ---------- WINNER BAR CHART DATA ----------
+winner_counts = ev["winner"].value_counts()
+winner_labels = ["Llama-70B Wins", "Gemma-31B Wins", "Tie"]
+winner_keys   = ["model1",         "model2",          "tie"]
+winner_values = [int(winner_counts.get(k, 0)) for k in winner_keys]
+winner_colors = ["#4C72B0", "#DD8452", "#9E9E9E"]
+
 # ---------- COLORS & LABELS ----------
 colors      = {"Llama-70B": "#4C72B0", "Gemma-31B": "#DD8452"}
 temp_colors = {"0.1": "#E1B12C", "0.5": "#C0392B", "1.0": "#8D6E63"}
-
-# ---------- 3 row × 3 column LAYOUT ----------
-fig = make_subplots(
-    rows=3, cols=3,
-    subplot_titles=[
-        # Row 1 – eski paneller
-        "Output Length (chars)", "Drug Overlap (count)", "Drug Overlap (%)",
-        # Row 2 – BLEU/ROUGE + temperature
-        "BLEU Score", "ROUGE-1 Score", "Temp: Output Length (chars)",
-        # Row 3 – Evaluator skorları
-        "Evaluator: Total Score (%)", "Evaluator: Accuracy (%)", "Evaluator: Safety (%)",
-    ],
-    horizontal_spacing=0.08,
-    vertical_spacing=0.18,
-)
-
-# ---------- ROW 1: old 2 PANEL ----------
-fig.add_trace(go.Box(y=df["model1_len"], name="Llama-70B",    marker_color=colors["Llama-70B"],    showlegend=True, boxpoints=False),  row=1, col=1)
-fig.add_trace(go.Box(y=df["model2_len"], name="Gemma-31B",    marker_color=colors["Gemma-31B"],    showlegend=True, boxpoints=False),  row=1, col=1)
-
-fig.add_trace(go.Box(y=df["model1_overlap"], name="Llama-70B",    marker_color=colors["Llama-70B"],    showlegend=False, boxpoints=False), row=1, col=2)
-fig.add_trace(go.Box(y=df["model2_overlap"], name="Gemma-31B",    marker_color=colors["Gemma-31B"],    showlegend=False, boxpoints=False), row=1, col=2)
-
-fig.add_trace(go.Box(y=df["model1_rx_ratio"], name="Llama-70B",    marker_color=colors["Llama-70B"],    showlegend=False, boxpoints=False), row=1, col=3)
-fig.add_trace(go.Box(y=df["model2_rx_ratio"], name="Gemma-31B",    marker_color=colors["Gemma-31B"],    showlegend=False, boxpoints=False), row=1, col=3)
-
-# ---------- ROW 2: BLEU / ROUGE / TEMPERATURE ----------
 models      = ["llama-3.3-70b", "gemma-4-31b"]
 model_names = ["Llama-70B",     "Gemma-31B"]
 
-for label, mcol in zip(model_names, models):
-    fig.add_trace(
-        go.Bar(x=[label], y=[br[f"{mcol}_bleu"].mean()],
-               name=label, marker_color=colors[label], showlegend=False,
-               text=[f"{br[f'{mcol}_bleu'].mean():.4f}"], textposition="outside"),
-        row=2, col=1)
-
-for label, mcol in zip(model_names, models):
-    fig.add_trace(
-        go.Bar(x=[label], y=[br[f"{mcol}_rouge1"].mean()],
-               name=label, marker_color=colors[label], showlegend=False,
-               text=[f"{br[f'{mcol}_rouge1'].mean():.4f}"], textposition="outside"),
-        row=2, col=2)
-
-for t in [0.1, 0.5, 1.0]:
-    sub = tm_df[tm_df["temperature"] == t]
-    fig.add_trace(
-        go.Box(y=sub["output_length"], name=f"temp={t}",
-               marker_color=temp_colors[str(t)], showlegend=True, boxpoints=False),
-        row=2, col=3)
-
-# ---------- ROW 3: EVALUATOR Scores ----------
-# Sanity check assertions to prevent silent scaling errors if evaluator format changes
+# ---------- SANITY CHECKS ----------
 for col in ["model1_total", "model2_total"]:
     if col in ev.columns and not ev[col].empty:
-        assert ev[col].max() <= 100.0, f"Error: {col} exceeds 100. Check evaluator scoring scale!"
-        
-for col in ["model1_accuracy", "model2_accuracy", "model1_safety", "model2_safety"]:
+        assert ev[col].max() <= MAX_TOTAL, f"Error: {col} exceeds {MAX_TOTAL}. Check evaluator scoring scale!"
+
+for col in ["model1_accuracy", "model2_accuracy", "model1_safety", "model2_safety",
+            "model1_completeness", "model2_completeness", "model1_usefulness", "model2_usefulness"]:
     if col in ev.columns and not ev[col].empty:
-        assert ev[col].max() <= 25.0, f"Error: {col} exceeds 25. Check evaluator scoring scale!"
+        assert ev[col].max() <= MAX_SUBSCORE, f"Error: {col} exceeds {MAX_SUBSCORE}. Check evaluator scoring scale!"
 
-# Total Score (divide by 100 to get percentage)
-fig.add_trace(go.Box(y=ev["model1_total"] / 100.0, name="Llama-70B",    marker_color=colors["Llama-70B"],    showlegend=False, boxpoints=False), row=3, col=1)
-fig.add_trace(go.Box(y=ev["model2_total"] / 100.0, name="Gemma-31B",    marker_color=colors["Gemma-31B"],    showlegend=False, boxpoints=False), row=3, col=1)
+# ---------- 5 row × 3 column LAYOUT ----------
+# Row 1: Output stats          — Length, Drug Overlap count, Drug Overlap %
+# Row 2: Text similarity       — BLEU, ROUGE-1, ROUGE-2
+# Row 3: Text similarity cont. — ROUGE-L, Evaluator Total, Winner bar chart
+# Row 4: Evaluator subscores   — Accuracy, Safety, Completeness
+# Row 5: Evaluator + Temp      — Usefulness, Temp→BLEU, Temp→ROUGE-1
+fig = make_subplots(
+    rows=5, cols=3,
+    subplot_titles=[
+        # Row 1
+        f"Output Length (chars) (n={len(df)})",
+        f"Drug Overlap — count (n={len(df)})",
+        f"Drug Overlap — % of True Rx (n={len(df)})",
+        # Row 2
+        f"BLEU Score (n={len(br)})",
+        f"ROUGE-1 F1 (n={len(br)})",
+        f"ROUGE-2 F1 (n={len(br)})",
+        # Row 3
+        f"ROUGE-L F1 (n={len(br)})",
+        f"Evaluator: Total Score % (n={len(ev)})",
+        f"Head-to-Head Winner (n={len(ev)})",
+        # Row 4
+        f"Evaluator: Accuracy % (n={len(ev)})",
+        f"Evaluator: Safety % (n={len(ev)})",
+        f"Evaluator: Completeness % (n={len(ev)})",
+        # Row 5
+        f"Evaluator: Usefulness % (n={len(ev)})",
+        f"Temp → BLEU (Gemma-31B, n={n_per_temp.get(0.1, '?')}/temp)",
+        f"Temp → ROUGE-1 (Gemma-31B, n={n_per_temp.get(0.1, '?')}/temp)",
+    ],
+    horizontal_spacing=0.08,
+    vertical_spacing=0.10,
+)
 
-# Accuracy (divide by 25 to get percentage)
-fig.add_trace(go.Box(y=ev["model1_accuracy"] / 25.0, name="Llama-70B",    marker_color=colors["Llama-70B"],    showlegend=False, boxpoints=False), row=3, col=2)
-fig.add_trace(go.Box(y=ev["model2_accuracy"] / 25.0, name="Gemma-31B",    marker_color=colors["Gemma-31B"],    showlegend=False, boxpoints=False), row=3, col=2)
+# ── ROW 1: Output Stats ──────────────────────────────────────────────
+fig.add_trace(go.Box(y=df["model1_len"],      name="Llama-70B", marker_color=colors["Llama-70B"], showlegend=True,  boxpoints=False), row=1, col=1)
+fig.add_trace(go.Box(y=df["model2_len"],      name="Gemma-31B", marker_color=colors["Gemma-31B"], showlegend=True,  boxpoints=False), row=1, col=1)
+fig.add_trace(go.Box(y=df["model1_overlap"],  name="Llama-70B", marker_color=colors["Llama-70B"], showlegend=False, boxpoints=False), row=1, col=2)
+fig.add_trace(go.Box(y=df["model2_overlap"],  name="Gemma-31B", marker_color=colors["Gemma-31B"], showlegend=False, boxpoints=False), row=1, col=2)
+fig.add_trace(go.Box(y=df["model1_rx_ratio"], name="Llama-70B", marker_color=colors["Llama-70B"], showlegend=False, boxpoints=False), row=1, col=3)
+fig.add_trace(go.Box(y=df["model2_rx_ratio"], name="Gemma-31B", marker_color=colors["Gemma-31B"], showlegend=False, boxpoints=False), row=1, col=3)
 
-# Safety (divide by 25 to get percentage)
-fig.add_trace(go.Box(y=ev["model1_safety"] / 25.0, name="Llama-70B",    marker_color=colors["Llama-70B"],    showlegend=False, boxpoints=False), row=3, col=3)
-fig.add_trace(go.Box(y=ev["model2_safety"] / 25.0, name="Gemma-31B",    marker_color=colors["Gemma-31B"],    showlegend=False, boxpoints=False), row=3, col=3)
+# ── ROW 2: BLEU / ROUGE-1 / ROUGE-2 ─────────────────────────────────
+for label, mcol in zip(model_names, models):
+    fig.add_trace(go.Box(y=br[f"{mcol}_bleu"],   name=label, marker_color=colors[label], showlegend=False, boxpoints=False), row=2, col=1)
+for label, mcol in zip(model_names, models):
+    fig.add_trace(go.Box(y=br[f"{mcol}_rouge1"], name=label, marker_color=colors[label], showlegend=False, boxpoints=False), row=2, col=2)
+for label, mcol in zip(model_names, models):
+    fig.add_trace(go.Box(y=br[f"{mcol}_rouge2"], name=label, marker_color=colors[label], showlegend=False, boxpoints=False), row=2, col=3)
+
+# ── ROW 3: ROUGE-L / Evaluator Total / Winner Chart ──────────────────
+for label, mcol in zip(model_names, models):
+    fig.add_trace(go.Box(y=br[f"{mcol}_rougeL"], name=label, marker_color=colors[label], showlegend=False, boxpoints=False), row=3, col=1)
+
+fig.add_trace(go.Box(y=ev["model1_total"] / MAX_TOTAL, name="Llama-70B", marker_color=colors["Llama-70B"], showlegend=False, boxpoints=False), row=3, col=2)
+fig.add_trace(go.Box(y=ev["model2_total"] / MAX_TOTAL, name="Gemma-31B", marker_color=colors["Gemma-31B"], showlegend=False, boxpoints=False), row=3, col=2)
+
+fig.add_trace(go.Bar(
+    x=winner_labels, y=winner_values,
+    marker_color=winner_colors,
+    text=winner_values, textposition="outside",
+    showlegend=False,
+), row=3, col=3)
+
+# ── ROW 4: Evaluator Accuracy / Safety / Completeness ────────────────
+fig.add_trace(go.Box(y=ev["model1_accuracy"]     / MAX_SUBSCORE, name="Llama-70B", marker_color=colors["Llama-70B"], showlegend=False, boxpoints=False), row=4, col=1)
+fig.add_trace(go.Box(y=ev["model2_accuracy"]     / MAX_SUBSCORE, name="Gemma-31B", marker_color=colors["Gemma-31B"], showlegend=False, boxpoints=False), row=4, col=1)
+fig.add_trace(go.Box(y=ev["model1_safety"]       / MAX_SUBSCORE, name="Llama-70B", marker_color=colors["Llama-70B"], showlegend=False, boxpoints=False), row=4, col=2)
+fig.add_trace(go.Box(y=ev["model2_safety"]       / MAX_SUBSCORE, name="Gemma-31B", marker_color=colors["Gemma-31B"], showlegend=False, boxpoints=False), row=4, col=2)
+fig.add_trace(go.Box(y=ev["model1_completeness"] / MAX_SUBSCORE, name="Llama-70B", marker_color=colors["Llama-70B"], showlegend=False, boxpoints=False), row=4, col=3)
+fig.add_trace(go.Box(y=ev["model2_completeness"] / MAX_SUBSCORE, name="Gemma-31B", marker_color=colors["Gemma-31B"], showlegend=False, boxpoints=False), row=4, col=3)
+
+# ── ROW 5: Usefulness / Temperature BLEU / Temperature ROUGE-1 ───────
+fig.add_trace(go.Box(y=ev["model1_usefulness"] / MAX_SUBSCORE, name="Llama-70B", marker_color=colors["Llama-70B"], showlegend=False, boxpoints=False), row=5, col=1)
+fig.add_trace(go.Box(y=ev["model2_usefulness"] / MAX_SUBSCORE, name="Gemma-31B", marker_color=colors["Gemma-31B"], showlegend=False, boxpoints=False), row=5, col=1)
+
+# Temperature quality panels — each box = n=1000 patients at one temperature.
+# Answers: "Does higher temperature degrade lexical quality?"
+for t in [0.1, 0.5, 1.0]:
+    sub = tm_df[tm_df["temperature"] == t]
+    tc  = temp_colors[str(t)]
+    fig.add_trace(go.Box(y=sub["bleu"],   name=f"temp={t}", marker_color=tc, showlegend=True,  boxpoints=False, legendgroup=f"t{t}"), row=5, col=2)
+    fig.add_trace(go.Box(y=sub["rouge1"], name=f"temp={t}", marker_color=tc, showlegend=False, boxpoints=False, legendgroup=f"t{t}"), row=5, col=3)
 
 # ---------- LAYOUT & AXES RANGES ----------
-# Calculate dynamic maximums with padding so nothing is cut off
-max_len = max(df["model1_len"].max(), df["model2_len"].max())
+max_len     = max(df["model1_len"].max(),     df["model2_len"].max())
 max_overlap = max(df["model1_overlap"].max(), df["model2_overlap"].max())
-max_ratio = max(df["model1_rx_ratio"].max(), df["model2_rx_ratio"].max())
+max_ratio   = max(df["model1_rx_ratio"].max(),df["model2_rx_ratio"].max())
 
-bleu_means = [br[f"{mcol}_bleu"].mean() for mcol in models]
-max_bleu_mean = max(bleu_means) if bleu_means else 0.1
-rouge_means = [br[f"{mcol}_rouge1"].mean() for mcol in models]
-max_rouge_mean = max(rouge_means) if rouge_means else 0.1
+bleu_maxs    = [br[f"{mcol}_bleu"].max()   for mcol in models if f"{mcol}_bleu"   in br.columns and not br[f"{mcol}_bleu"].dropna().empty]
+max_bleu_val = max(bleu_maxs)  if bleu_maxs  else 0.1
+rouge1_maxs  = [br[f"{mcol}_rouge1"].max() for mcol in models if f"{mcol}_rouge1" in br.columns and not br[f"{mcol}_rouge1"].dropna().empty]
+max_rouge1   = max(rouge1_maxs) if rouge1_maxs else 0.1
+rouge2_maxs  = [br[f"{mcol}_rouge2"].max() for mcol in models if f"{mcol}_rouge2" in br.columns and not br[f"{mcol}_rouge2"].dropna().empty]
+max_rouge2   = max(rouge2_maxs) if rouge2_maxs else 0.1
+rougeL_maxs  = [br[f"{mcol}_rougeL"].max() for mcol in models if f"{mcol}_rougeL" in br.columns and not br[f"{mcol}_rougeL"].dropna().empty]
+max_rougeL   = max(rougeL_maxs) if rougeL_maxs else 0.1
 
-max_temp_len = tm_df["output_length"].max() if not tm_df.empty else 1000
-
-max_eval_total = max(ev["model1_total"].max(), ev["model2_total"].max())
-max_eval_acc = max(ev["model1_accuracy"].max(), ev["model2_accuracy"].max())
-max_eval_safety = max(ev["model1_safety"].max(), ev["model2_safety"].max())
+max_temp_bleu  = tm_df["bleu"].max()   if not tm_df.empty else 0.1
+max_temp_rouge = tm_df["rouge1"].max() if not tm_df.empty else 0.1
 
 fig.update_layout(
     title=dict(
@@ -151,25 +192,37 @@ fig.update_layout(
         x=0.5, xanchor="center", font=dict(size=22),
     ),
     width=1200,
-    height=1100,
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=14)),
-    margin=dict(t=120, b=50, l=50, r=30),
+    height=1750,
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=13)),
+    margin=dict(t=120, b=60, l=50, r=30),
     template="plotly_white",
     barmode="group",
 )
 
-# Apply ranges (start at 0, pad max by 15-30%)
+# Row 1 — output stats
 fig.update_yaxes(range=[0, max_len * 1.15], row=1, col=1)
 fig.update_yaxes(range=[0, max_overlap + 1 if max_overlap < 5 else max_overlap * 1.15], row=1, col=2)
 fig.update_yaxes(range=[0, max(1.0, max_ratio) * 1.15], tickformat=".0%", row=1, col=3)
 
-fig.update_yaxes(range=[0, max_bleu_mean * 1.3], row=2, col=1)
-fig.update_yaxes(range=[0, max_rouge_mean * 1.3], row=2, col=2)
-fig.update_yaxes(range=[0, max_temp_len * 1.15], row=2, col=3)
+# Row 2 — BLEU / ROUGE-1 / ROUGE-2
+fig.update_yaxes(range=[0, max_bleu_val * 1.3], row=2, col=1)
+fig.update_yaxes(range=[0, max_rouge1   * 1.3], row=2, col=2)
+fig.update_yaxes(range=[0, max_rouge2   * 1.3], row=2, col=3)
 
-fig.update_yaxes(range=[0, 1.1], tickformat=".0%", row=3, col=1)
+# Row 3 — ROUGE-L / Total % / Winner (winner y auto)
+fig.update_yaxes(range=[0, max_rougeL * 1.3], row=3, col=1)
 fig.update_yaxes(range=[0, 1.1], tickformat=".0%", row=3, col=2)
-fig.update_yaxes(range=[0, 1.1], tickformat=".0%", row=3, col=3)
+fig.update_yaxes(range=[0, max(winner_values) * 1.25], row=3, col=3)
+
+# Row 4 — Accuracy / Safety / Completeness (all %)
+fig.update_yaxes(range=[0, 1.1], tickformat=".0%", row=4, col=1)
+fig.update_yaxes(range=[0, 1.1], tickformat=".0%", row=4, col=2)
+fig.update_yaxes(range=[0, 1.1], tickformat=".0%", row=4, col=3)
+
+# Row 5 — Usefulness / Temp-BLEU / Temp-ROUGE-1
+fig.update_yaxes(range=[0, 1.1], tickformat=".0%", row=5, col=1)
+fig.update_yaxes(range=[0, max_temp_bleu  * 1.3], row=5, col=2)
+fig.update_yaxes(range=[0, max_temp_rouge * 1.3], row=5, col=3)
 
 try:
     fig.write_image("model_comparison_chart.png", scale=2)
