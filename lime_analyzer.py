@@ -197,8 +197,8 @@ COL_TEXT   = "#e8eaf0"
 COL_MUTED  = "#8890a8"
 
 MODEL_COLORS = {
-    "LLaMA-3.3-70B": "#4c72b0",
-    "LLaMA-3.1-8B":  "#dd8452",
+    "llama-3.3-70b-versatile": "#4c72b0",
+    "gemma-4-31b-it":  "#dd8452",
 }
 
 
@@ -214,7 +214,7 @@ def plot_dashboard(all_results: list[dict], output_path: str):
     models = list(MODEL_COLS.keys())
     n_mod = len(models)
 
-    # Row height: 8.0 units per patient, wider figure for readability
+    # Wider figure for readability
     fig = plt.figure(figsize=(40, 22), facecolor=BG_DARK)
 
     # ---- outer grid: top (bar charts) + bottom (heatmap) ----
@@ -233,13 +233,13 @@ def plot_dashboard(all_results: list[dict], output_path: str):
 
     fig.text(
         0.5, 0.985,
-        f"Global LIME Explainability -- Top 20 Words (Aggregated across {total_patients} Patients)",
+        f"Global LIME Explainability -- Top Influential Words (Aggregated across {total_patients} Patients)",
         ha="center", va="top", fontsize=40, fontweight="bold",
         color=COL_TEXT, fontfamily="monospace",
     )
     fig.text(
         0.5, 0.954,
-        "BSP2 / Project Omega  |  TF-IDF cosine similarity proxy  |  n_samples=800",
+        f"BSP2 / Project Omega  |  TF-IDF lexical-overlap proxy  |  n_samples={N_SAMPLES}",
         ha="center", va="top", fontsize=24, color=COL_MUTED,
     )
 
@@ -380,7 +380,7 @@ def main():
     if not os.path.exists(INPUT_CSV):
         raise FileNotFoundError(
             f"'{INPUT_CSV}' not found.\n"
-            "Make sure to run multiple patients v3.py first."
+            "Make sure to run patients_pipeline.py first."
         )
 
     df = pd.read_csv(INPUT_CSV)
