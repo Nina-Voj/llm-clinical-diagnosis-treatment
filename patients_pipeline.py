@@ -49,15 +49,15 @@ MAX_TOKENS      = 2500 # limits response length
 # 2. DATA LOADING (DuckDB)
 # For large cohorts (tens of thousands of patients) we use a two-phase
 # loading strategy:
-#   Phase 1 – get_patient_pool(): lightweight query returning only patient
+#   Phase 1: get_patient_pool(): lightweight query returning only patient
 #              IDs, demographics, and diagnoses. Runs once at startup.
-#   Phase 2 – get_batch_data(): heavy query loading labs, prescriptions,
+#   Phase 2: get_batch_data(): heavy query loading labs, prescriptions,
 #              vitals, etc. for a small BATCH of patients at a time.
 #              Memory is released between batches.
 # =====================================================================
 
 
-COHORT_CSV        = "cohort_ids.csv"  # persisted patient list — same across all runs
+COHORT_CSV        = "cohort_ids.csv"  # persisted patient list, same across all runs
 
 def get_patient_pool(db_path, max_patients=MAX_PATIENTS, seed=RANDOM_SEED):
     """
@@ -235,7 +235,7 @@ def icd_chapter(code):
 
 
 def print_cohort_summary(pool):
-    # Deduplicate by hadm_id so stats are per-patient, not per-diagnosis
+    # Deduplicate by hadm_id so stats are per patient, not per diagnosis
     p = pool.drop_duplicates(subset="hadm_id")
     print(Fore.MAGENTA + Style.BRIGHT + "\n=== COHORT SUMMARY ===")
     ages = p["anchor_age"]
@@ -651,7 +651,7 @@ def parse_eval_json(text):
 # =====================================================================
 def main():
     # ================================================================
-    # PHASE 1: Get the full patient pool (lightweight — no heavy data)
+    # PHASE 1: Get the full patient pool (lightweight, no heavy data)
     # ================================================================
     pool = get_patient_pool(MIMIC_DB, MAX_PATIENTS)
     if pool.empty:
@@ -663,9 +663,9 @@ def main():
     unique_pool = pool.drop_duplicates(subset="hadm_id").reset_index(drop=True)
     total = len(unique_pool)
 
-    # ================================================================
+    # ===================================================================
     # PHASE 2: Resume support, read only the hadm_id column to save RAM
-    # ================================================================
+    # ===================================================================
     done_ids      = set()
     eval_done_ids = set()
 
@@ -677,9 +677,9 @@ def main():
         eval_done_ids = set(pd.read_csv(EVAL_CSV, usecols=["hadm_id"])["hadm_id"].tolist())
         print(Fore.YELLOW + f"[resume] {len(eval_done_ids)} evaluations already saved\n")
 
-    # ================================================================
+    # ===================================================================
     # PHASE 3: Batch loop: load heavy data BATCH_SIZE patients at a time
-    # ================================================================
+    # ===================================================================
     for batch_start in range(0, total, BATCH_SIZE):
         batch_unique = unique_pool.iloc[batch_start : batch_start + BATCH_SIZE]
 
