@@ -2,11 +2,11 @@
 # BSP2 / Project Omega -- Step 1: Main Pipeline
 # 
 # RUN ORDER:
-# 1. patients_pipeline.py    <-- THIS FILE (Generates LLM responses & evaluator scores)
+# 1. multiple patients v3.py    <-- THIS FILE (Generates LLM responses & evaluator scores)
 # 2. bleu_rouge_metrics.py      (Calculates text similarity metrics)
-# 3. temperature_test.py             (Runs the hyperparameter experiment)
-# 4. graph_maker.py                  (Builds the main visualization dashboard)
-# 5. lime_analyzer.py           (Runs LIME explainability analysis)
+# 3. temperature.py             (Runs the hyperparameter experiment)
+# 4. graphs.py                  (Builds the main visualization dashboard)
+# 5. lime_analysis.py           (Runs LIME explainability analysis)
 # ============================================================
 import os
 import duckdb
@@ -24,22 +24,22 @@ init(autoreset=True)
 # Here we define the main settings for our pipeline: which LLM models to test,
 # how many patients to process, and API rate limit safeguards.
 # =====================================================================
-MIMIC_DB          = r"C:\Your mimic.db adress" # Local indexed database(EDIT THIS)
+MIMIC_DB          = "mimic.db" # Local indexed database (place in same folder or update path)
 MAX_PATIENTS      = 4000  # Set to a number to limit, or None to process all patients
 RANDOM_SEED       = 42    # Fixed seed for reproducible random patient sampling (set a seed)
 BATCH_SIZE        = 50    # Number of patients to load into memory at once (keeps RAM usage low)
-SLEEP_BETWEEN     = 1     # seconds between model calls (API rate limit buffer)
-SLEEP_BETWEEN_PAT = 1     # seconds between patients (API rate limit buffer)
+SLEEP_BETWEEN     = 10     # seconds between model calls (API rate limit buffer)
+SLEEP_BETWEEN_PAT = 10     # seconds between patients (API rate limit buffer)
 RUN_EVALUATOR     = True
-EVAL_ONLY_FIRST_N = None  # None = evaluate all 4000 patients (no API cost on local HPC)
+EVAL_ONLY_FIRST_N = None  # None = evaluate all patients (no API cost on local HPC)
 OUTPUT_CSV        = "mimic_batch_results.csv"
 EVAL_CSV          = "mimic_batch_evaluations.csv"
 
 
 
-MODEL1_NAME    = "llama-3.3-70b-versatile" # Groq -> OpenRouter fallback
+MODEL1_NAME    = "llama-3.3-70b-versatile" # Groq API
 MODEL2_NAME    = "gemma-4-31b-it" # Google Gemini API
-EVALUATOR_NAME = "openai/gpt-oss-120b" # Groq -> OpenRouter fallback
+EVALUATOR_NAME = "openai/gpt-oss-120b" # Groq API
 FUZZY_THRESHOLD = 0.75 # Similarity threshold (75%) to count a recommended drug as a match
 PRECISION_K     = 5    # Max number of recommended drugs evaluated for Precision@K
 TEMPERATURE     = 0.3  # moderate temperature for more creative outputs
@@ -375,9 +375,9 @@ Be concise but clinically precise. Avoid generic boilerplate."""
 
 
 # =====================================================================
-# 4. API CALL WRAPPER (WITH MULTI-KEY ROTATION & 7 PROVIDERS)
-# Model 1 -> Groq -> OpenRouter -> SambaNova -> Fireworks -> NVIDIA NIM
-# Evaluator -> Groq -> OpenRouter -> Cerebras -> NVIDIA NIM
+# 4. API CALL WRAPPER
+# Model 1 -> Groq
+# Evaluator -> Groq
 # Model 2 -> Google Gemini API
 # =====================================================================
 import time
@@ -389,21 +389,11 @@ def load_keys(filename):
     with open(filename) as f: return [line.strip() for line in f if line.strip()]
 
 GROQ_KEYS = load_keys("groq_api_key.txt")
-OPENROUTER_KEYS = load_keys("openrouter_api_key.txt")
 GEMINI_KEYS = load_keys("gemini_api_key.txt")
-CEREBRAS_KEYS = load_keys("cerebras_api_key.txt")
-SAMBANOVA_KEYS = load_keys("sambanova_api_key.txt")
-FIREWORKS_KEYS = load_keys("fireworks_api_key.txt")
-NVIDIA_KEYS = load_keys("nvidia_api_key.txt")
 
 for fname, keys in [
     ("groq_api_key.txt", GROQ_KEYS),
-    ("openrouter_api_key.txt", OPENROUTER_KEYS),
     ("gemini_api_key.txt", GEMINI_KEYS),
-    ("cerebras_api_key.txt", CEREBRAS_KEYS),
-    ("sambanova_api_key.txt", SAMBANOVA_KEYS),
-    ("fireworks_api_key.txt", FIREWORKS_KEYS),
-    ("nvidia_api_key.txt", NVIDIA_KEYS),
 ]:
     if not keys:
         print(Fore.YELLOW + f"Warning: {fname} is missing or empty!")
@@ -414,68 +404,22 @@ except ImportError:
     raise SystemExit("Fatal Error: groq library not found. Run 'pip install groq'")
 
 try:
-    from openai import OpenAI
-except ImportError:
-    raise SystemExit("Fatal Error: openai library not found. Run 'pip install openai'")
-
-try:
     import google.generativeai as genai
     from google.api_core.exceptions import ResourceExhausted
 except ImportError:
     raise SystemExit("Fatal Error: google.generativeai library not found. Run 'pip install google-generativeai'")
 
 GROQ_KEY_IDX = 0
-OPENROUTER_KEY_IDX = 0
 GEMINI_KEY_IDX = 0
-CEREBRAS_KEY_IDX = 0
-SAMBANOVA_KEY_IDX = 0
-FIREWORKS_KEY_IDX = 0
-NVIDIA_KEY_IDX = 0
 
-groq_client      = Groq(api_key=GROQ_KEYS[GROQ_KEY_IDX]) if GROQ_KEYS else None
-openrouter_client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=OPENROUTER_KEYS[OPENROUTER_KEY_IDX]) if OPENROUTER_KEYS else None
-cerebras_client  = OpenAI(base_url="https://api.cerebras.ai/v1", api_key=CEREBRAS_KEYS[CEREBRAS_KEY_IDX]) if CEREBRAS_KEYS else None
-sambanova_client = OpenAI(base_url="https://api.sambanova.ai/v1", api_key=SAMBANOVA_KEYS[SAMBANOVA_KEY_IDX]) if SAMBANOVA_KEYS else None
-fireworks_client = OpenAI(base_url="https://api.fireworks.ai/inference/v1", api_key=FIREWORKS_KEYS[FIREWORKS_KEY_IDX]) if FIREWORKS_KEYS else None
-nvidia_client    = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=NVIDIA_KEYS[NVIDIA_KEY_IDX]) if NVIDIA_KEYS else None
+groq_client = Groq(api_key=GROQ_KEYS[GROQ_KEY_IDX]) if GROQ_KEYS else None
 
 if GEMINI_KEYS:
     genai.configure(api_key=GEMINI_KEYS[GEMINI_KEY_IDX])
 
-# Model name mappings per provider
-GROQ_TO_OPENROUTER = {
-    "llama-3.3-70b-versatile": "meta-llama/llama-3.3-70b-instruct",
-    "llama-3.1-8b-instant":    "meta-llama/llama-3.1-8b-instruct",
-    "openai/gpt-oss-120b":     "openai/gpt-oss-120b",
-}
-GROQ_TO_SAMBANOVA = {
-    "llama-3.3-70b-versatile": "Meta-Llama-3.3-70B-Instruct",
-    "llama-3.1-8b-instant":    "Meta-Llama-3.1-8B-Instruct",
-}
-GROQ_TO_FIREWORKS = {
-    "llama-3.3-70b-versatile": "accounts/fireworks/models/llama-v3p3-70b-instruct",
-}
-GROQ_TO_NVIDIA = {
-    "llama-3.3-70b-versatile": "meta/llama-3.3-70b-instruct",
-    "openai/gpt-oss-120b":     "openai/gpt-oss-120b",
-}
-OPENROUTER_TO_CEREBRAS = {
-    "openai/gpt-oss-120b": "llama3.1-70b",
-}
-
-# Fallback states:
-# model1:    0=Groq, 1=OpenRouter, 2=SambaNova, 3=Fireworks, 4=NVIDIA
-# evaluator: 0=Groq, 1=OpenRouter, 2=Cerebras,  3=NVIDIA
-FALLBACK_STATE = {
-    "model1": 0,
-    "evaluator": 0,
-}
-
 def ask(model, prompt, max_retries=9999, temperature=TEMPERATURE, max_tokens=MAX_TOKENS):
-    global GROQ_KEY_IDX, OPENROUTER_KEY_IDX, GEMINI_KEY_IDX, CEREBRAS_KEY_IDX
-    global SAMBANOVA_KEY_IDX, FIREWORKS_KEY_IDX, NVIDIA_KEY_IDX
-    global groq_client, openrouter_client, cerebras_client
-    global sambanova_client, fireworks_client, nvidia_client
+    global GROQ_KEY_IDX, GEMINI_KEY_IDX
+    global groq_client
 
     empty_attempts = 0
 
@@ -484,7 +428,7 @@ def ask(model, prompt, max_retries=9999, temperature=TEMPERATURE, max_tokens=MAX
             is_m1   = (model == MODEL1_NAME)
             is_eval = (model == EVALUATOR_NAME)
 
-            # ── MODEL 2: Google Gemini ─────────────────────────────────────
+            # -- MODEL 2: Google Gemini -----------------------------------
             if model == MODEL2_NAME:
                 api_type = "gemini"
                 generation_config = {
@@ -495,90 +439,22 @@ def ask(model, prompt, max_retries=9999, temperature=TEMPERATURE, max_tokens=MAX
                 resp = gemini_model.generate_content(prompt)
                 out  = resp.text
 
-            # ── MODEL 1: Groq -> OpenRouter -> SambaNova -> Fireworks -> NVIDIA
-            elif is_m1:
-                state = FALLBACK_STATE["model1"]
-                if state == 0 and GROQ_KEYS:
-                    api_type = "groq"
-                    resp = groq_client.chat.completions.create(
-                        model=model,
-                        messages=[{"role": "user", "content": prompt}],
-                        temperature=temperature, max_tokens=max_tokens,
-                    )
-                    out = resp.choices[0].message.content
-                elif state == 1 and OPENROUTER_KEYS:
-                    api_type = "openrouter"
-                    resp = openrouter_client.chat.completions.create(
-                        model=GROQ_TO_OPENROUTER.get(model, model),
-                        messages=[{"role": "user", "content": prompt}],
-                        temperature=temperature, max_tokens=max_tokens,
-                    )
-                    out = resp.choices[0].message.content
-                elif state == 2 and SAMBANOVA_KEYS:
-                    api_type = "sambanova"
-                    resp = sambanova_client.chat.completions.create(
-                        model=GROQ_TO_SAMBANOVA.get(model, model),
-                        messages=[{"role": "user", "content": prompt}],
-                        temperature=temperature, max_tokens=max_tokens,
-                    )
-                    out = resp.choices[0].message.content
-                elif state == 3 and FIREWORKS_KEYS:
-                    api_type = "fireworks"
-                    resp = fireworks_client.chat.completions.create(
-                        model=GROQ_TO_FIREWORKS.get(model, model),
-                        messages=[{"role": "user", "content": prompt}],
-                        temperature=temperature, max_tokens=max_tokens,
-                    )
-                    out = resp.choices[0].message.content
-                else:
-                    api_type = "nvidia"
-                    resp = nvidia_client.chat.completions.create(
-                        model=GROQ_TO_NVIDIA.get(model, model),
-                        messages=[{"role": "user", "content": prompt}],
-                        temperature=temperature, max_tokens=max_tokens,
-                    )
-                    out = resp.choices[0].message.content
-
-            # ── EVALUATOR: Groq -> OpenRouter -> Cerebras -> NVIDIA ────────
-            elif is_eval:
-                state = FALLBACK_STATE["evaluator"]
-                if state == 0 and GROQ_KEYS:
-                    api_type = "groq"
-                    resp = groq_client.chat.completions.create(
-                        model=model,
-                        messages=[{"role": "user", "content": prompt}],
-                        temperature=temperature, max_tokens=max_tokens,
-                    )
-                    out = resp.choices[0].message.content
-                elif state == 1 and OPENROUTER_KEYS:
-                    api_type = "openrouter"
-                    resp = openrouter_client.chat.completions.create(
-                        model=GROQ_TO_OPENROUTER.get(model, model),
-                        messages=[{"role": "user", "content": prompt}],
-                        temperature=temperature, max_tokens=max_tokens,
-                    )
-                    out = resp.choices[0].message.content
-                elif state == 2 and CEREBRAS_KEYS:
-                    api_type = "cerebras"
-                    resp = cerebras_client.chat.completions.create(
-                        model=OPENROUTER_TO_CEREBRAS.get(model, model),
-                        messages=[{"role": "user", "content": prompt}],
-                        temperature=temperature, max_tokens=max_tokens,
-                    )
-                    out = resp.choices[0].message.content
-                else:
-                    api_type = "nvidia"
-                    resp = nvidia_client.chat.completions.create(
-                        model=GROQ_TO_NVIDIA.get(model, model),
-                        messages=[{"role": "user", "content": prompt}],
-                        temperature=temperature, max_tokens=max_tokens,
-                    )
-                    out = resp.choices[0].message.content
+            # -- MODEL 1 & EVALUATOR: Groq -----------------------
+            elif is_m1 or is_eval:
+                api_type = "groq"
+                if not GROQ_KEYS:
+                    return "ERROR: No Groq keys available"
+                resp = groq_client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=temperature, max_tokens=max_tokens,
+                )
+                out = resp.choices[0].message.content
 
             else:
-                return "ERROR: unknown model or fallback state"
+                return "ERROR: unknown model"
 
-            # ── Output length check ────────────────────────────────────────
+            # -- Output length check -------------------------------
             if out and len(str(out).strip()) >= 50:
                 return out
             else:
@@ -593,34 +469,13 @@ def ask(model, prompt, max_retries=9999, temperature=TEMPERATURE, max_tokens=MAX
         except Exception as e:
             err = str(e).lower()
 
-            # ── 404 / Model Not Found ──────────────────────────────────────
+            # -- 404 / Model Not Found --------------------------------------------
             if "404" in err or "not found" in err:
-                if api_type == "groq":
-                    print(Fore.YELLOW + f"  Groq: model not found. Falling back...")
-                    if is_m1:   FALLBACK_STATE["model1"]    = 1
-                    if is_eval: FALLBACK_STATE["evaluator"] = 1
-                    continue
-                elif api_type == "openrouter":
-                    print(Fore.YELLOW + f"  OpenRouter: model not found. Falling back...")
-                    if is_m1:   FALLBACK_STATE["model1"]    = 2
-                    if is_eval: FALLBACK_STATE["evaluator"] = 2
-                    continue
-                elif api_type == "sambanova" and is_m1:
-                    print(Fore.YELLOW + f"  SambaNova: model not found. Falling back to Fireworks...")
-                    FALLBACK_STATE["model1"] = 3
-                    continue
-                elif api_type == "fireworks" and is_m1:
-                    print(Fore.YELLOW + f"  Fireworks: model not found. Falling back to NVIDIA...")
-                    FALLBACK_STATE["model1"] = 4
-                    continue
-                elif api_type == "cerebras" and is_eval:
-                    print(Fore.YELLOW + f"  Cerebras: model not found. Falling back to NVIDIA...")
-                    FALLBACK_STATE["evaluator"] = 3
-                    continue
+                print(Fore.YELLOW + f"  Model not found: {model}. Cannot proceed.")
+                return "ERROR: model not found"
 
-            # ── Rate Limit / Insufficient Credits ─────────────────────────
+            # -- Rate Limit / Insufficient Credits ----------------------------------
             if "rate limit" in err or "429" in err or "resourceexhausted" in err or "402" in err or "credits" in err:
-
                 if api_type == "gemini":
                     GEMINI_KEY_IDX += 1
                     if GEMINI_KEY_IDX < len(GEMINI_KEYS):
@@ -637,74 +492,34 @@ def ask(model, prompt, max_retries=9999, temperature=TEMPERATURE, max_tokens=MAX
                         groq_client = Groq(api_key=GROQ_KEYS[GROQ_KEY_IDX])
                         continue
                     else:
-                        print(Fore.YELLOW + "  All Groq keys exhausted! Falling back to OpenRouter...")
-                        if is_m1:   FALLBACK_STATE["model1"]    = 1
-                        if is_eval: FALLBACK_STATE["evaluator"] = 1
-                        continue
+                        raise SystemExit(f"FATAL: All {len(GROQ_KEYS)} Groq keys exhausted.")
 
-                elif api_type == "openrouter":
-                    OPENROUTER_KEY_IDX += 1
-                    if OPENROUTER_KEY_IDX < len(OPENROUTER_KEYS):
-                        print(Fore.YELLOW + f"  OpenRouter limit. Switching to key {OPENROUTER_KEY_IDX+1}/{len(OPENROUTER_KEYS)}...")
-                        openrouter_client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=OPENROUTER_KEYS[OPENROUTER_KEY_IDX])
+            # 403 Forbidden / PermissionDenied, treat as bad key, rotate or exit
+            if "403" in err or "forbidden" in err or "permission" in err or "unauthorized" in err or "authorization" in err:
+                if api_type == "gemini":
+                    GEMINI_KEY_IDX += 1
+                    if GEMINI_KEY_IDX < len(GEMINI_KEYS):
+                        print(Fore.YELLOW + f"  Gemini key unauthorized. Switching to key {GEMINI_KEY_IDX+1}/{len(GEMINI_KEYS)}...")
+                        genai.configure(api_key=GEMINI_KEYS[GEMINI_KEY_IDX])
                         continue
                     else:
-                        if is_m1:
-                            print(Fore.YELLOW + "  All OpenRouter keys exhausted! Falling back to SambaNova...")
-                            FALLBACK_STATE["model1"] = 2
-                        elif is_eval:
-                            print(Fore.YELLOW + "  All OpenRouter keys exhausted! Falling back to Cerebras...")
-                            FALLBACK_STATE["evaluator"] = 2
-                        continue
-
-                elif api_type == "sambanova":
-                    SAMBANOVA_KEY_IDX += 1
-                    if SAMBANOVA_KEY_IDX < len(SAMBANOVA_KEYS):
-                        print(Fore.YELLOW + f"  SambaNova limit. Switching to key {SAMBANOVA_KEY_IDX+1}/{len(SAMBANOVA_KEYS)}...")
-                        sambanova_client = OpenAI(base_url="https://api.sambanova.ai/v1", api_key=SAMBANOVA_KEYS[SAMBANOVA_KEY_IDX])
+                        raise SystemExit(f"FATAL: All Gemini keys are unauthorized/forbidden.")
+                elif api_type == "groq":
+                    GROQ_KEY_IDX += 1
+                    if GROQ_KEY_IDX < len(GROQ_KEYS):
+                        print(Fore.YELLOW + f"  Groq key unauthorized. Switching to key {GROQ_KEY_IDX+1}/{len(GROQ_KEYS)}...")
+                        groq_client = Groq(api_key=GROQ_KEYS[GROQ_KEY_IDX])
                         continue
                     else:
-                        print(Fore.YELLOW + "  All SambaNova keys exhausted! Falling back to Fireworks...")
-                        FALLBACK_STATE["model1"] = 3
-                        continue
-
-                elif api_type == "fireworks":
-                    FIREWORKS_KEY_IDX += 1
-                    if FIREWORKS_KEY_IDX < len(FIREWORKS_KEYS):
-                        print(Fore.YELLOW + f"  Fireworks limit. Switching to key {FIREWORKS_KEY_IDX+1}/{len(FIREWORKS_KEYS)}...")
-                        fireworks_client = OpenAI(base_url="https://api.fireworks.ai/inference/v1", api_key=FIREWORKS_KEYS[FIREWORKS_KEY_IDX])
-                        continue
-                    else:
-                        print(Fore.YELLOW + "  All Fireworks keys exhausted! Falling back to NVIDIA...")
-                        FALLBACK_STATE["model1"] = 4
-                        continue
-
-                elif api_type == "cerebras":
-                    CEREBRAS_KEY_IDX += 1
-                    if CEREBRAS_KEY_IDX < len(CEREBRAS_KEYS):
-                        print(Fore.YELLOW + f"  Cerebras limit. Switching to key {CEREBRAS_KEY_IDX+1}/{len(CEREBRAS_KEYS)}...")
-                        cerebras_client = OpenAI(base_url="https://api.cerebras.ai/v1", api_key=CEREBRAS_KEYS[CEREBRAS_KEY_IDX])
-                        continue
-                    else:
-                        print(Fore.YELLOW + "  All Cerebras keys exhausted! Falling back to NVIDIA...")
-                        FALLBACK_STATE["evaluator"] = 3
-                        continue
-
-                elif api_type == "nvidia":
-                    NVIDIA_KEY_IDX += 1
-                    if NVIDIA_KEY_IDX < len(NVIDIA_KEYS):
-                        print(Fore.YELLOW + f"  NVIDIA limit. Switching to key {NVIDIA_KEY_IDX+1}/{len(NVIDIA_KEYS)}...")
-                        nvidia_client = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=NVIDIA_KEYS[NVIDIA_KEY_IDX])
-                        continue
-                    else:
-                        raise SystemExit(f"FATAL: All {len(NVIDIA_KEYS)} NVIDIA keys exhausted. Add more keys and restart.")
+                        raise SystemExit(f"FATAL: All Groq keys are unauthorized/forbidden.")
 
             print(Fore.RED + f"  API Error ({type(e).__name__}): {e}. Retrying in 10s...")
             time.sleep(10)
 
     return "ERROR: failed"
 
-# Regex to extract drug-like tokens from model output (used in drug overlap matching)
+
+# Regex to extract drug like tokens from model output (used in drug overlap matching)
 DRUG_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9\-]{2,}")
 
 def _normalize(s):
@@ -844,12 +659,12 @@ def main():
         return
     print_cohort_summary(pool)
 
-    # One row per patient for the main loop; pool keeps all dx rows for build_prompt
+    # One row per patient for the main loop, pool keeps all dx rows for build_prompt
     unique_pool = pool.drop_duplicates(subset="hadm_id").reset_index(drop=True)
     total = len(unique_pool)
 
     # ================================================================
-    # PHASE 2: Resume support — read only the hadm_id column to save RAM
+    # PHASE 2: Resume support, read only the hadm_id column to save RAM
     # ================================================================
     done_ids      = set()
     eval_done_ids = set()
@@ -863,7 +678,7 @@ def main():
         print(Fore.YELLOW + f"[resume] {len(eval_done_ids)} evaluations already saved\n")
 
     # ================================================================
-    # PHASE 3: Batch loop — load heavy data BATCH_SIZE patients at a time
+    # PHASE 3: Batch loop: load heavy data BATCH_SIZE patients at a time
     # ================================================================
     for batch_start in range(0, total, BATCH_SIZE):
         batch_unique = unique_pool.iloc[batch_start : batch_start + BATCH_SIZE]
@@ -934,7 +749,7 @@ def main():
                     "model2_overlap":    m2_ov,
                     "model2_rx_matched": "; ".join(m2_matched),
                 }
-                # Append single row to CSV — never keep all rows in RAM
+                # Append single row to CSV, never keep all rows in RAM
                 write_header = not os.path.exists(OUTPUT_CSV)
                 pd.DataFrame([new_row]).to_csv(
                     OUTPUT_CSV, mode="a", index=False,
@@ -943,7 +758,7 @@ def main():
                 print(Fore.GREEN + f"    saved -> {OUTPUT_CSV}")
                 done_ids.add(hid)
             else:
-                # Models done but eval not done — read from CSV instead of RAM
+                # Models done but eval not done, read from CSV instead of RAM
                 try:
                     row_data = pd.read_csv(OUTPUT_CSV, usecols=["hadm_id", "model1_output", "model2_output", "prompt"])
                     match = row_data[row_data["hadm_id"] == hid].iloc[0]
@@ -1004,7 +819,7 @@ def main():
         del labs_df, rx_df, icu_df, vitals_df, omr_df, proc_df, micro_df
 
     # ================================================================
-    # PHASE 4: Final metrics (read from CSV, never from RAM)
+    # PHASE 4: Final metrics (readS from CSV, NOT from RAM)
     # ================================================================
     results_df = pd.read_csv(OUTPUT_CSV) if os.path.exists(OUTPUT_CSV) else pd.DataFrame()
     eval_df    = pd.read_csv(EVAL_CSV)   if os.path.exists(EVAL_CSV)   else None
