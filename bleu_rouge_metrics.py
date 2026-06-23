@@ -2,7 +2,7 @@
 # BSP2 / Project Omega -- Step 2: BLEU & ROUGE Metrics
 # 
 # RUN ORDER:
-# 1. patients_pipeline.py     (Generates LLM responses & evaluator scores)
+# 1. patients_pipeline.py       (Generates LLM responses & evaluator scores)
 # 2. bleu_rouge_metrics.py      <-- THIS FILE (Calculates text similarity metrics)
 # 3. temperature_test.py        (Runs the hyperparameter experiment)
 # 4. graph_maker.py             (Builds the main visualization dashboard)
@@ -22,7 +22,7 @@ INPUT_CSV  = "mimic_batch_results.csv"
 OUTPUT_CSV = "bleu_rouge_results.csv"
 
 MODEL_COLS = {
-    "llama-3.3-70b":  "model1_output",  # Llama 3.3 70B (Groq -> OpenRouter -> SambaNova -> Fireworks -> NVIDIA)
+    "llama-3.3-70b":  "model1_output",  # Llama 3.3 70B (Groq)
     "gemma-4-31b":    "model2_output",  # Gemma 4 31B (Google Gemini API)
 }
 
