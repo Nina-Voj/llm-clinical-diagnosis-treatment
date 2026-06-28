@@ -1,7 +1,7 @@
 # Large Language Models for Clinical Diagnosis and Treatment Recommendation
 
-**Project Omega** -- Bachelor Semester Project S2, Academic Year 2025/26
-University of Luxembourg -- Can Yildiz, Nina Vojtassak, Tuna Karakus
+**Project Omega**  Bachelor Semester Project S2, Academic Year 2025/26
+University of Luxembourg  Can Yildiz, Nina Vojtassak, Tuna Karakus
 
 ---
 
@@ -9,9 +9,9 @@ University of Luxembourg -- Can Yildiz, Nina Vojtassak, Tuna Karakus
 
 This repository contains the full evaluation pipeline for **Project Omega**, a systematic comparison of two open-weight large language models on real-world clinical tasks.
 
-We tested **Meta's LLaMA-3.3-70B** and **Google's Gemma-4-31B** on clinical diagnosis hypothesization and treatment recommendation using patient records from the **MIMIC-IV** database (2008-2024). Each model received the same structured prompt -- built from ICD diagnoses, lab results, ICU vitals, procedures, and anthropometric data -- and was asked to produce a differential diagnosis, treatment plan, safety flags, and a confidence rating.
+We tested **Meta's LLaMA-3.3-70B** and **Google's Gemma-4-31B** on clinical diagnosis hypothesization and treatment recommendation using patient records from the **MIMIC-IV** database (2008-2024). Each model received the same structured prompt built from ICD diagnoses, lab results, ICU vitals, procedures, and anthropometric data and was asked to produce a differential diagnosis, treatment plan, safety flags, and a confidence rating.
 
-**The key finding is counterintuitive:** Gemma-4-31B wins **97.9%** of head-to-head clinical evaluations, yet scores *lower* on BLEU and ROUGE. The explanation is a brevity bias in n-gram metrics -- LLaMA's short, terse outputs happen to overlap more with concise ICD reference strings, even though they carry less clinical value. This finding motivates moving away from lexical metrics when evaluating free-form clinical text.
+**The key finding is counterintuitive:** Gemma-4-31B wins **97.9%** of head-to-head clinical evaluations, yet scores *lower* on BLEU and ROUGE. The explanation is a brevity bias in n-gram metrics LLaMA's short, terse outputs happen to overlap more with concise ICD reference strings, even though they carry less clinical value. This finding motivates moving away from lexical metrics when evaluating free-form clinical text.
 
 ---
 
@@ -48,10 +48,6 @@ We tested **Meta's LLaMA-3.3-70B** and **Google's Gemma-4-31B** on clinical diag
 ```
 .
 |-- bsp_report/
-|   |-- main.tex                         # LaTeX source for the final report
-|   |-- main.pdf                         # Compiled report
-|   |-- abstract_page.tex / .pdf         # Standalone one-page French abstract
-|   |-- Project_Omega_Presentation.pptx  # Presentation slides
 |   |-- figures/
 |   |   |-- evaluation_dashboard.png     # Full 15-panel evaluation dashboard
 |   |   `-- lime_chart.png               # LIME explainability chart
