@@ -1,6 +1,6 @@
-# Large Language Models for Clinical Diagnosis and Treatment Recommendation
+﻿# Large Language Models for Clinical Diagnosis and Treatment Recommendation
 
-> **Project Omega**: Bachelor Semester Project S2, Academic Year 2025/26  
+> **Project Omega** â€” Bachelor Semester Project S2, Academic Year 2025/26  
 > University of Luxembourg  
 > Can Yildiz Â· Nina Vojtassak Â· Tuna Karakus
 
