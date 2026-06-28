@@ -1,0 +1,52 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage[margin=1.8cm]{geometry}
+\usepackage{mathptmx}
+\usepackage{parskip}
+\setlength{\parskip}{0.15cm}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+
+\begin{document}
+
+\begin{center}
+  {\Large \textbf{Large Language Models for Clinical Diagnosis and Treatment Recommendation}}
+
+  \vspace{0.2cm}
+  {\large Bachelor Semester Project S2 (Academic Year 2025/26)}\\
+  {\large University of Luxembourg}
+
+  \vspace{0.2cm}
+  \begin{tabular}{ccc}
+    \large Can Yildiz & \large Nina Vojtassak & \large Tuna Karakus \\
+    \small can.yildiz.001@student.uni.lu &
+    \small nina.vojtassak.001@student.uni.lu &
+    \small tuna.karakus.001@student.uni.lu \\
+  \end{tabular}
+
+  \vspace{0.3cm}
+  \rule{\linewidth}{0.4pt}
+\end{center}
+
+\vspace{0.3cm}
+
+\textbf{R\'{e}sum\'{e}.}
+Les syst\`{e}mes d'aide \`{a} la d\'{e}cision clinique fond\'{e}s sur les grands mod\`{e}les de langage repr\'{e}sentent une fronti\`{e}re prometteuse en intelligence artificielle m\'{e}dicale. Ce projet, intitul\'{e} Project Omega, pr\'{e}sente une \'{e}valuation comparative syst\'{e}matique de deux mod\`{e}les de langage \`{a} poids ouverts, LLaMA-3.3-70B de Meta et Gemma-4-31B de Google, sur la t\^{a}che d'hypoth\`{e}se de diagnostic clinique et de recommandation de traitement \`{a} partir de dossiers m\'{e}dicaux \'{e}lectroniques r\'{e}els.
+
+\`{A} partir d'une cohorte reproductible de 2~000 admissions de patients issue de la base de donn\'{e}es clinique MIMIC-IV, nous construisons des invites richement structur\'{e}es incluant les donn\'{e}es d\'{e}mographiques des patients, l'ensemble des diagnostics cod\'{e}s ICD, les mesures de laboratoire, les signes vitaux en unit\'{e} de soins intensifs, les donn\'{e}es anthropom\'{e}triques OMR, les proc\'{e}dures et les r\'{e}sultats de cultures microbiologiques. Chaque mod\`{e}le est charg\'{e} de g\'{e}n\'{e}rer des hypoth\`{e}ses de diagnostic diff\'{e}rentiel, des recommandations de traitement, des alertes de s\'{e}curit\'{e} et une \'{e}valuation de confiance clinique dans un format de sortie structur\'{e}.
+
+L'\'{e}valuation est conduite selon six dimensions compl\'{e}mentaires~: la verbosit\'{e} des sorties, le chevauchement m\'{e}dicamenteux entre les recommandations des mod\`{e}les et les prescriptions r\'{e}elles, la similarit\'{e} lexicale BLEU et ROUGE-1/2/L, et quatre axes de qualit\'{e} clinique \'{e}valu\'{e}s par un \'{e}valuateur autonome bas\'{e} sur un grand mod\`{e}le de langage. L'\'{e}valuateur autonome, GPT-OSS 120B, attribue \`{a} chaque sortie une note de pr\'{e}cision clinique, d'exhaustivit\'{e}, de s\'{e}curit\'{e} et d'utilit\'{e} pratique sur une \'{e}chelle de 1 \`{a} 25 par dimension. L'\'{e}valuateur d\'{e}signe \'{e}galement un vainqueur pour chaque \'{e}valuation patient.
+
+Les r\'{e}sultats r\'{e}v\`{e}lent que Gemma-4-31B remporte 1~959 des 2~000 \'{e}valuations en t\^{e}te-\`{a}-t\^{e}te (97,9\%), surpassant substantiellement LLaMA-3.3-70B sur toutes les dimensions de qualit\'{e} clinique. Simultan\'{e}ment, LLaMA obtient de meilleurs scores BLEU (0,052 contre 0,018) et ROUGE-1 (0,220 contre 0,121). Cette contradiction apparente s'explique par un effet de br\`{e}vet\'{e}~: les sorties plus courtes et centr\'{e}es sur le diagnostic de LLaMA produisent un chevauchement lexical plus important avec les cha\^{i}nes de r\'{e}f\'{e}rence ICD concises, tandis que les r\'{e}ponses compl\`{e}tes de Gemma sont p\'{e}nalis\'{e}es malgr\'{e} une qualit\'{e} clinique sup\'{e}rieure. Cette constatation met en \'{e}vidence une limitation fondamentale des m\'{e}triques n-gramme pour l'\'{e}valuation de la g\'{e}n\'{e}ration de texte clinique en format libre.
+
+Une exp\'{e}rience de sensibilit\'{e} \`{a} la temp\'{e}rature sur 1~000 patients avec trois r\'{e}glages ($T \in \{0{,}1,\ 0{,}5,\ 1{,}0\}$) montre que la qualit\'{e} des sorties de Gemma est largement robuste \`{a} cet hyperparam\`{e}tre dans la plage test\'{e}e. L'analyse d'explicabilit\'{e} bas\'{e}e sur LIME confirme que les deux mod\`{e}les s'ancrent principalement sur les sections Diagnostics et R\'{e}sultats de laboratoire de l'invite, la section Diagnostics \'{e}tant le pr\'{e}dicteur le plus fort du vocabulaire de sortie pour LLaMA, et un sch\'{e}ma d'influence plus distribu\'{e} \'{e}tant observ\'{e} pour Gemma.
+
+Le projet contribue un pipeline d'\'{e}valuation reproductible, un cadre d'\'{e}valuation multidimensionnel combinant des m\'{e}triques lexicales avec une \'{e}valuation de la qualit\'{e} clinique bas\'{e}e sur les grands mod\`{e}les de langage, ainsi que des preuves empiriques motivant l'adoption d'\'{e}valuateurs autonomes comme signal de qualit\'{e} principal pour les t\^{a}ches de g\'{e}n\'{e}ration de texte clinique.
+
+\vfill
+\begin{center}
+  \rule{\linewidth}{0.4pt}\\[0.2cm]
+  \small University of Luxembourg $\cdot$ Bachelor Semester Project S2 $\cdot$ Academic Year 2025/26
+\end{center}
+
+\end{document}
