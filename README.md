@@ -1,8 +1,8 @@
 # Large Language Models for Clinical Diagnosis and Treatment Recommendation
 
-> **Project Omega** — Bachelor Semester Project S2, Academic Year 2025/26  
+> **Project Omega** â€” Bachelor Semester Project S2, Academic Year 2025/26  
 > University of Luxembourg  
-> Can Yildiz · Nina Vojtassak · Tuna Karakus
+> Can Yildiz Â· Nina Vojtassak Â· Tuna Karakus
 
 ---
 
@@ -10,9 +10,9 @@
 
 This repository contains the full evaluation pipeline for **Project Omega**, a systematic comparison of two open-weight large language models on real-world clinical tasks.
 
-We tested **Meta's LLaMA-3.3-70B** and **Google's Gemma-4-31B** on clinical diagnosis hypothesization and treatment recommendation using patient records from the **MIMIC-IV** database (2008–2024). Each model received the same structured prompt — built from ICD diagnoses, lab results, ICU vitals, procedures, and anthropometric data — and was asked to produce a differential diagnosis, treatment plan, safety flags, and a confidence rating.
+We tested **Meta's LLaMA-3.3-70B** and **Google's Gemma-4-31B** on clinical diagnosis hypothesization and treatment recommendation using patient records from the **MIMIC-IV** database (2008â€“2024). Each model received the same structured prompt â€” built from ICD diagnoses, lab results, ICU vitals, procedures, and anthropometric data â€” and was asked to produce a differential diagnosis, treatment plan, safety flags, and a confidence rating.
 
-**The key finding is counterintuitive:** Gemma-4-31B wins **97.9%** of head-to-head clinical evaluations, yet scores *lower* on BLEU and ROUGE. The explanation is a brevity bias in n-gram metrics — LLaMA's short, terse outputs happen to overlap more with concise ICD reference strings, even though they carry less clinical value. This finding motivates moving away from lexical metrics when evaluating free-form clinical text.
+**The key finding is counterintuitive:** Gemma-4-31B wins **97.9%** of head-to-head clinical evaluations, yet scores *lower* on BLEU and ROUGE. The explanation is a brevity bias in n-gram metrics â€” LLaMA's short, terse outputs happen to overlap more with concise ICD reference strings, even though they carry less clinical value. This finding motivates moving away from lexical metrics when evaluating free-form clinical text.
 
 ---
 
@@ -30,7 +30,7 @@ We tested **Meta's LLaMA-3.3-70B** and **Google's Gemma-4-31B** on clinical diag
 
 ## Evaluation Dashboard
 
-![Evaluation Dashboard](figures/evaluation_dashboard.png)
+![Evaluation Dashboard](bsp_report/figures/evaluation_dashboard.png)
 
 *Full dashboard for 2,000 MIMIC-IV patients. Top rows show output statistics and lexical metrics. Middle row shows head-to-head win counts and total evaluator scores. Bottom rows break down the four clinical quality dimensions (accuracy, completeness, safety, usefulness) and the temperature sensitivity experiment.*
 
@@ -38,7 +38,7 @@ We tested **Meta's LLaMA-3.3-70B** and **Google's Gemma-4-31B** on clinical diag
 
 ## LIME Explainability
 
-![LIME Explainability](figures/lime_chart.png)
+![LIME Explainability](bsp_report/figures/lime_chart.png)
 
 *Global LIME results aggregated across 50 patients per model. Bars show mean absolute influence weight per token. Teal = positive influence, coral = negative. Bottom panels are section-level heatmaps showing which parts of the prompt (Diagnoses, Lab Results, Vitals/OMR, etc.) drive each model's output most strongly.*
 
@@ -48,24 +48,24 @@ We tested **Meta's LLaMA-3.3-70B** and **Google's Gemma-4-31B** on clinical diag
 
 ```
 .
-├── bsp_report/
-│   ├── main.tex                         # LaTeX source for the final report
-│   ├── main.pdf                         # Compiled report
-│   ├── abstract_page.tex / .pdf         # Standalone one-page French abstract
-│   ├── Project_Omega_Presentation.pptx  # Presentation slides
-│   ├── figures/
-│   │   ├── evaluation_dashboard.png     # Full 15-panel evaluation dashboard
-│   │   └── lime_chart.png               # LIME explainability chart
-│   ├── README.md
-│   ├── DISCLAIMER.md
-│   └── .gitignore
-│
-└── multiple patients pipeline/
-    ├── patients_pipeline.py             # Main pipeline: LLM inference + autonomous evaluation
-    ├── bleu_rouge_metrics.py            # BLEU / ROUGE-1/2/L calculation
-    ├── temperature_test.py              # Temperature sensitivity experiment (T=0.1, 0.5, 1.0)
-    ├── graph_maker.py                   # Dashboard visualization
-    └── lime_analyzer.py                 # LIME-based explainability analysis
+â”œâ”€â”€ bsp_report/
+â”‚   â”œâ”€â”€ main.tex                         # LaTeX source for the final report
+â”‚   â”œâ”€â”€ main.pdf                         # Compiled report
+â”‚   â”œâ”€â”€ abstract_page.tex / .pdf         # Standalone one-page French abstract
+â”‚   â”œâ”€â”€ Project_Omega_Presentation.pptx  # Presentation slides
+â”‚   â”œâ”€â”€ figures/
+â”‚   â”‚   â”œâ”€â”€ evaluation_dashboard.png     # Full 15-panel evaluation dashboard
+â”‚   â”‚   â””â”€â”€ lime_chart.png               # LIME explainability chart
+â”‚   â”œâ”€â”€ README.md
+â”‚   â”œâ”€â”€ DISCLAIMER.md
+â”‚   â””â”€â”€ .gitignore
+â”‚
+â””â”€â”€ multiple patients pipeline/
+    â”œâ”€â”€ patients_pipeline.py             # Main pipeline: LLM inference + autonomous evaluation
+    â”œâ”€â”€ bleu_rouge_metrics.py            # BLEU / ROUGE-1/2/L calculation
+    â”œâ”€â”€ temperature_test.py              # Temperature sensitivity experiment (T=0.1, 0.5, 1.0)
+    â”œâ”€â”€ graph_maker.py                   # Dashboard visualization
+    â””â”€â”€ lime_analyzer.py                 # LIME-based explainability analysis
 ```
 
 ---
@@ -77,9 +77,9 @@ We tested **Meta's LLaMA-3.3-70B** and **Google's Gemma-4-31B** on clinical diag
 - Python 3.10+
 - Access to [MIMIC-IV v3.1](https://physionet.org/content/mimiciv/3.1/) via PhysioNet credentialed access
 - API keys for:
-  - [Groq](https://console.groq.com) — for LLaMA-3.3-70B
-  - [Google AI Studio](https://aistudio.google.com) — for Gemma-4-31B
-  - [OpenRouter](https://openrouter.ai) — for the GPT-OSS 120B evaluator
+  - [Groq](https://console.groq.com) â€” for LLaMA-3.3-70B
+  - [Google AI Studio](https://aistudio.google.com) â€” for Gemma-4-31B
+  - [OpenRouter](https://openrouter.ai) â€” for the GPT-OSS 120B evaluator
 
 ### Install
 
@@ -151,3 +151,4 @@ MIMIC-IV dataset:
 ## License
 
 Code is provided for academic and research purposes only. MIMIC-IV data is subject to the [PhysioNet Credentialed Health Data License](https://physionet.org/content/mimiciv/3.1/#license).
+
