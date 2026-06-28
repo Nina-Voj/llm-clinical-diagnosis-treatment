@@ -1,8 +1,7 @@
 # Large Language Models for Clinical Diagnosis and Treatment Recommendation
 
-> **Project Omega** -- Bachelor Semester Project S2, Academic Year 2025/26
-> University of Luxembourg
-> Can Yildiz, Nina Vojtassak, Tuna Karakus
+**Project Omega** -- Bachelor Semester Project S2, Academic Year 2025/26
+University of Luxembourg -- Can Yildiz, Nina Vojtassak, Tuna Karakus
 
 ---
 
@@ -77,9 +76,8 @@ We tested **Meta's LLaMA-3.3-70B** and **Google's Gemma-4-31B** on clinical diag
 - Python 3.10+
 - Access to [MIMIC-IV v3.1](https://physionet.org/content/mimiciv/3.1/) via PhysioNet credentialed access
 - API keys for:
-  - [Groq](https://console.groq.com) -- for LLaMA-3.3-70B
-  - [Google AI Studio](https://aistudio.google.com) -- for Gemma-4-31B
-  - [OpenRouter](https://openrouter.ai) -- for the GPT-OSS 120B evaluator
+  - [Groq](https://console.groq.com) -- LLaMA-3.3-70B and the GPT-OSS 120B evaluator both run on Groq
+  - [Google AI Studio](https://aistudio.google.com) -- Gemma-4-31B runs via the Gemini API
 
 ### Install
 
