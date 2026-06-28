@@ -1,3 +1,11 @@
+"""
+================ init_db.py ==============================================
+Imports MIMIC-IV v3.1 CSVs into a local DuckDB (mimic.db).
+Keeps only vital-sign chartevents (8 item IDs) to keep the DB ~7.5 GB.
+Creates indexes on subject_id / hadm_id for fast pipeline queries.
+==========================================================================
+"""
+
 import os
 import duckdb
 import time
