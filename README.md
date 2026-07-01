@@ -29,7 +29,6 @@ We tested **Meta's LLaMA-3.3-70B** and **Google's Gemma-4-31B** on clinical diag
 | Evaluator: Completeness | ~47% | ~80% |
 | Evaluator: Usefulness | ~52% | ~85% |
 | Head-to-head wins (n=2,000) | 38 (1.9%) | 1,959 (97.9%), 3 ties |
-
 ---
 
 ## Evaluation Dashboard
