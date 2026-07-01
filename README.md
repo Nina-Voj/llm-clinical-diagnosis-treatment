@@ -2,7 +2,7 @@
 
 **Project Omega**  Bachelor Semester Project S2, Academic Year 2025/26
 University of Luxembourg  Can Yildiz, Nina Vojtassak, Tuna Karakus
-
+Supervisor: Matteo Magnini
 ---
 
 ## Overview
