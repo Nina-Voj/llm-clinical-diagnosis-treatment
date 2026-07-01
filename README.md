@@ -27,7 +27,7 @@ We tested **Meta's LLaMA-3.3-70B** and **Google's Gemma-4-31B** on clinical diag
 | ROUGE-2 F1 (median) | ~0.07 | ~0.05 |
 | ROUGE-L F1 (median) | ~0.14 | ~0.12 |
 | Evaluator total score | ~52% | ~85% |
-| Evaluator: Accuracy | ~58% | ~85% |
+| Evaluator: Accuracy | ~60% | ~85% |
 | Evaluator: Safety | ~52% | ~90% |
 | Evaluator: Completeness | ~47% | ~80% |
 | Evaluator: Usefulness | ~52% | ~85% |
