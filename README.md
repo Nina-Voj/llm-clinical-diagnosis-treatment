@@ -17,13 +17,18 @@ We tested **Meta's LLaMA-3.3-70B** and **Google's Gemma-4-31B** on clinical diag
 
 ## Results at a Glance
 
-| Metric | LLaMA-3.3-70B | Gemma-4-31B |
 |---|---|---|
-| Median output length | ~2,100 chars | ~4,500 chars |
-| BLEU | 0.052 | 0.018 |
-| ROUGE-1 | 0.220 | 0.121 |
-| Evaluator total score | ~50% | ~75% |
-| Head-to-head wins (n=2,000) | 38 (1.9%) | 1,959 (97.9%) |
+| Median output length | ~2,200 chars | ~5,000 chars |
+| BLEU (median) | ~0.03 | ~0.015 |
+| ROUGE-1 F1 (median) | ~0.21 | ~0.21 (nearly equal) |
+| ROUGE-2 F1 (median) | ~0.07 | ~0.05 |
+| ROUGE-L F1 (median) | ~0.14 | ~0.12 |
+| Evaluator total score | ~52% | ~85% |
+| Evaluator: Accuracy | ~58% | ~85% |
+| Evaluator: Safety | ~52% | ~90% |
+| Evaluator: Completeness | ~47% | ~80% |
+| Evaluator: Usefulness | ~52% | ~85% |
+| Head-to-head wins (n=2,000) | 38 (1.9%) | 1,959 (97.9%), 3 ties |
 
 ---
 
