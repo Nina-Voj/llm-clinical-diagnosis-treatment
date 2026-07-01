@@ -32,6 +32,12 @@ We tested **Meta's LLaMA-3.3-70B** and **Google's Gemma-4-31B** on clinical diag
 | Evaluator: Completeness | ~47% | ~80% |
 | Evaluator: Usefulness | ~52% | ~85% |
 | Head-to-head wins (n=2,000) | 38 (1.9%) | 1,959 (97.9%), 3 ties |
+### Temperature Sensitivity (Gemma-4-31B, n=1000)
+
+| Metric | Temp = 0.1 | Temp = 0.5 | Temp = 1.0 |
+|---|---|---|---|
+| BLEU (median) | ~0.007 | ~0.007 | ~0.007 |
+| ROUGE-1 (median) | ~0.11 | ~0.11 | ~0.11 |
 ---
 
 ## Evaluation Dashboard
