@@ -19,6 +19,8 @@ We tested **Meta's LLaMA-3.3-70B** and **Google's Gemma-4-31B** on clinical diag
 
 | Metric | Llama-3.3-70B | Gemma-4-31B |
 |---|---|---|
+| Drug overlap (median count) | 1 | 2 |
+| Drug overlap (median %) | ~5% | ~12% |
 | Median output length | ~2,200 chars | ~5,000 chars |
 | BLEU (median) | ~0.03 | ~0.015 |
 | ROUGE-1 F1 (median) | ~0.21 | ~0.21 (nearly equal) |
