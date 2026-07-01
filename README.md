@@ -17,6 +17,7 @@ We tested **Meta's LLaMA-3.3-70B** and **Google's Gemma-4-31B** on clinical diag
 
 ## Results at a Glance
 
+| Metric | Llama-3.3-70B | Gemma-4-31B |
 |---|---|---|
 | Median output length | ~2,200 chars | ~5,000 chars |
 | BLEU (median) | ~0.03 | ~0.015 |
