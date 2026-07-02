@@ -157,6 +157,9 @@ MIMIC-IV dataset:
 ```
 
 ---
+## Development Notes
+
+Generative AI tool (Gemini Pro 3.1) provided assistance with code drafting, debugging, and editing throughout this project. All architectural decisions, model selection, evaluation methodology, and final review were carried out by the project authors.
 
 ## License
 
